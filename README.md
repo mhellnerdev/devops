@@ -1,4 +1,4 @@
-This is a placeholder for now. We will be adding all the code related to
+This is a code repository for:
  - Automated Provisioning
  - Application Configuration Management
  - Automated Deployments
