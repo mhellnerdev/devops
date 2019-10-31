@@ -15,7 +15,7 @@ resource "aws_instance" "terraform-01" {
 
   root_block_device {
     volume_type = "gp2"
-    volume_size = "12"
+    volume_size = "8"
     delete_on_termination = true
     encrypted = true
   }
@@ -34,7 +34,7 @@ resource "aws_instance" "terraform-02" {
   
   root_block_device {
     volume_type = "gp2"
-    volume_size = "12"
+    volume_size = "8"
     delete_on_termination = true
     encrypted = true
   }
