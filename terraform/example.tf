@@ -21,7 +21,7 @@ resource "aws_instance" "terraform-01" {
   }
 }
 
-resource "aws_eip" "cicrclelabs-ip" {
+resource "aws_eip" "terraform-ip" {
     vpc = true
     instance = aws_instance.terraform-01.id
 
