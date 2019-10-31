@@ -10,7 +10,7 @@ resource "aws_instance" "terraform-01" {
   vpc_security_group_ids = ["sg-002d15a754884e25e"]
 
   tags = {
-  Name = "Hello TerraForm"
+  Name = "Terraform-01"
   }
 
   root_block_device {
@@ -19,6 +19,11 @@ resource "aws_instance" "terraform-01" {
     delete_on_termination = true
     encrypted = true
   }
+}
+
+resource "aws_eip" "cicrclelabs-ip" {
+    vpc = true
+    instance = aws_instance.terraform-01.id
 
 }
 
@@ -29,7 +34,7 @@ resource "aws_instance" "terraform-02" {
   vpc_security_group_ids = ["sg-002d15a754884e25e"]
 
   tags = {
-  Name = "Goodbye TerraForm"
+  Name = "TerraForm-02"
   }
   
   root_block_device {
@@ -38,5 +43,6 @@ resource "aws_instance" "terraform-02" {
     delete_on_termination = true
     encrypted = true
   }
-
 }
+
+
