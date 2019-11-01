@@ -1,15 +1,22 @@
 
 provider "aws" {
   profile    = "default"
-  region     = "us-east-1"
+  region     = var.region
+}
+
+terraform {
+  backend "s3" {
+    bucket = "circlelabs-terraform-states"
+    key = "terraform-state"
+    region = "us-east-1"
+  }
 }
 
 resource "aws_instance" "terraform-01" {
   ami           = "ami-00dc79254d0461090"
   instance_type = "t2.micro"
-  key_name      = "xxxx"
+  key_name      = var.useastkeyname
   vpc_security_group_ids = ["sg-002d15a754884e25e"]
-
   tags = {
   Name = "Terraform-01"
   }
@@ -24,7 +31,7 @@ resource "aws_instance" "terraform-01" {
   connection {
     type     = "ssh"
     user     = "ec2-user"
-    private_key = file("~/SSH/xxxx.pem")
+    private_key = file(var.useastprvkey)
     host     = self.public_ip
   }
 
@@ -35,8 +42,8 @@ resource "aws_instance" "terraform-01" {
     ]
   }
  provisioner "file" {
-    source = "~/SSH/xxxx.pem"
-    destination = "/home/ec2-user/.ssh/xxxx.pem"
+    source = "~/SSH/mhellnerdev-us-east-kp.pem"
+    destination = "/home/ec2-user/.ssh/mhellnerdev-us-east-kp.pem"
   }
 }
   
@@ -47,12 +54,12 @@ resource "aws_eip" "terraform-ip" {
 
 }
 
+/*
 resource "aws_instance" "terraform-02" {
   ami           = "ami-00dc79254d0461090"
   instance_type = "t2.micro"
-  key_name      = "xxxx"
+  key_name      = "mhellnerdev-us-east-kp"
   vpc_security_group_ids = ["sg-002d15a754884e25e"]
-
   tags = {
   Name = "TerraForm-02"
   }
@@ -64,3 +71,5 @@ resource "aws_instance" "terraform-02" {
     encrypted = true
   }
 }
+
+*/

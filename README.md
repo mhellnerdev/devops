@@ -1,5 +1,5 @@
 This is a code repository for:
- - Automated Provisioning
+ - Automated Provisioning (TerraForm)
  - Application Configuration Management
  - Automated Deployments
  - Monitoring Automation
