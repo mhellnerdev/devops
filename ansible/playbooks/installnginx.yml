@@ -2,8 +2,8 @@
   gather_facts: yes
   become: yes
   tasks:
-  - name: Remove Nginx
-    apt: pkg=nginx state=absent
+  - name: Install Nginx
+    apt: pkg=nginx state=present
     notify:
     - restart nginx
   - name: Enable Nginx during boot
