@@ -1,0 +1,13 @@
+- hosts: webservers # edit /etc/ansible/hosts to specify hostnames
+  gather_facts: yes
+  become: yes # becomes sudo on ubuntu
+  tasks:
+  - name: Install foo
+    apt: pkg=foo state=present
+    notify:
+    - restart foo # sends output to handlers below
+  - name: Enable foo during boot
+    service: name=foo state=started enabled=yes
+  handlers:
+    - name: restart foo # takes input from notify to restart service
+      service: name=foo state=restarted
