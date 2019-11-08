@@ -2,8 +2,8 @@
 
 
 ### References:
-https://docs.ansible.com/
-https://blog.ssdnodes.com/blog/step-by-step-ansible-guide/
+- https://docs.ansible.com/
+- https://blog.ssdnodes.com/blog/step-by-step-ansible-guide/
 
 
 
