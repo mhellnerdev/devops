@@ -1,0 +1,13 @@
+- hosts: webservers
+  gather_facts: yes
+  become: yes
+  tasks:
+  - name: Remove Nginx
+    apt: pkg=nginx state=absent
+    notify:
+    - removed nginx
+  - name: Enable Nginx during boot
+    service: name=nginx state=stopped enabled=no
+  handlers:
+    - name: removed nginx
+      service: name=nginx state=stopped
