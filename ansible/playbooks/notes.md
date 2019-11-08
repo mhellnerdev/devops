@@ -1,1 +1,3 @@
-ansible-playbook xxxx.yml -u ubuntu
+```$ ansible-playbook xxxx.yml -u ubuntu```
+
+
