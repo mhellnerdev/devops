@@ -20,7 +20,7 @@
   - name: Remove and Stop Nginx during boot
     service: name=nginx state=stopped enabled=no
   
-  - name: Clean unwanted older stuff
+  - name: Clean unused packages
     apt:
       autoremove: yes
       purge: yes

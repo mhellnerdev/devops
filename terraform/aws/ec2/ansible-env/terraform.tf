@@ -18,7 +18,7 @@ terraform {
 
 ############################################################
 
-/* Declare AWS EC2 instance 01 */
+/* Declare AWS EC2 ANSIBLE CONTROL NODE */
 
 resource "aws_instance" "ansible-control-node" {
   ami           = "ami-04b9e92b5572fa0d1" // ubuntu linux
@@ -50,6 +50,9 @@ resource "aws_instance" "ansible-control-node" {
   provisioner "remote-exec" {
     inline = [
       "sudo apt update -y"
+      "sudo apt-get install software-properties-common"
+      "sudo apt-add-repository ppa:ansible/ansible"
+
     ]
   }
 
@@ -72,7 +75,7 @@ resource "aws_eip" "terraform-ip" {
 
 ############################################################
 
-/* Declare AWS EC2 instance 02 */
+/* Declare AWS EC2 INVENTORY NODE 01 */
 
 resource "aws_instance" "ansible-inventory-01" {
   ami           = "ami-04b9e92b5572fa0d1" // ubuntu linux
@@ -126,7 +129,7 @@ resource "aws_eip" "terraform-ip" {
 
 #############################################################
 
-/* Declare AWS EC2 instance 03 */
+/* Declare AWS EC2 INVENTORY NODE 02 */
 
 resource "aws_instance" "ansible-inventory-02" {
   ami           = "ami-04b9e92b5572fa0d1" // ubuntu linux
@@ -181,7 +184,7 @@ resource "aws_eip" "terraform-ip" {
 
 ############################################################
 
-/* Declare AWS EC2 instance 01 */
+/* Declare AWS EC2 INVENTORY NODE 03 */
 
 resource "aws_instance" "ansible-db" {
   ami           = "ami-04b9e92b5572fa0d1" // ubuntu linux
