@@ -31,7 +31,7 @@ resource "aws_instance" "terraform-01" {
     volume_type = "gp2"
     volume_size = "8"
     delete_on_termination = true
-    encrypted = true
+    encrypted = false
   }
 
 /* Remote connectection and setup. */
