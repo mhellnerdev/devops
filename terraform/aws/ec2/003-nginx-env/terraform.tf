@@ -9,10 +9,10 @@ provider "aws" {
 
 terraform {
   backend "s3" {
-    bucket = "circlelabs-terraform-states"
+    bucket = "circlelabs-terraform-states" // .tfstate file gets stored in S3
     key = "ec2-simple.tfstate"
     region = "us-east-1"
-    dynamodb_table = "terraform-lock"
+    dynamodb_table = "terraform-lock" // dynamodb lock that prevents modification of .tf file while in and UP state
   }
 }
 
