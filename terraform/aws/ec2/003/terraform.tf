@@ -179,3 +179,56 @@ resource "aws_eip" "terraform-ip" {
 */
 
 
+############################################################
+
+/* Declare AWS EC2 instance 01 */
+
+resource "aws_instance" "ansible-db" {
+  ami           = "ami-04b9e92b5572fa0d1" // ubuntu linux
+  instance_type = "t2.micro"
+  key_name      = var.useastkeyname
+  vpc_security_group_ids = ["sg-002d15a754884e25e"] // WebDMZ
+  tags = {
+  Name = "ansible-db"
+  }
+
+  root_block_device {
+    volume_type = "gp2"
+    volume_size = "8"
+    delete_on_termination = true
+    encrypted = false
+  }
+
+/* Remote connectection and setup. */
+
+  connection {
+    type     = "ssh"
+    user     = "ubuntu"
+    private_key = file(var.useastprvkey)
+    host     = self.public_ip
+  }
+
+/* Remote commands */
+
+  provisioner "remote-exec" {
+    inline = [
+      "sudo apt update -y"
+    ]
+  }
+
+/*  Copy private key to new server. Must run terrform apply as sudo */      
+    
+    provisioner "file" {
+      source = "~/SSH/mhellnerdev-us-east-kp.pem"
+      destination = "/home/ubuntu/.ssh/mhellnerdev-us-east-kp.pem"
+  }
+
+}
+  
+/* Declare and assign elastic IP to instance
+ 
+resource "aws_eip" "terraform-ip" {
+    vpc = true
+    instance = aws_instance.terraform-01.id
+} 
+*/
