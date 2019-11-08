@@ -1,0 +1,3 @@
+[webservers:vars] # these can also be set in /etc/ansible/hosts
+pkg001=nginx
+pkg002=mysql-server
