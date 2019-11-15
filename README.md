@@ -5,7 +5,8 @@ This is a code repository for:
  - Monitoring Automation
 
 
-##### Docker Notes
+#### Docker Notes
+##### Commands
 - docker pull <image name>
 - docker run <image name>
 - docker run -idt -p 80:80 <image name> 
@@ -13,5 +14,6 @@ This is a code repository for:
 - docker build -t <tag name> .
 - docker exec -it <containter id> /bin/bash
 
+- Avoid below workflow in most cases
 - docker tag <old image> <new image> - useful for when you make changes inside the container
 - docker commit - commits changes to new tag
