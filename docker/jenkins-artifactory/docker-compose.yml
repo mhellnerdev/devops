@@ -5,10 +5,10 @@ services:
       networks:
         - ci_net
       ports:
-        - "8085:8080"
+        - "7000:8080"
         - "50000:50000"
       volumes:
-        - "jenkins:/var/jenkins_home"
+        - "jenkins:/var/jenkins_home_lts"
 
     artifactory:
       image: "docker.bintray.io/jfrog/artifactory-oss"
