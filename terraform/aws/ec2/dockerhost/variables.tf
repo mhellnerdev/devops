@@ -11,7 +11,7 @@ variable "useastprvkey" {
 }
 
 variable "instancetype" {
-    default = "t2.micro"
+    default = "m4.large"
 }
 
 variable "ami" {

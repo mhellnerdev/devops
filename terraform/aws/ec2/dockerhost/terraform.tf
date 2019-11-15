@@ -20,13 +20,13 @@ terraform {
 /* Declare AWS EC2 Docker Host */
 ############################################################
 
-resource "aws_instance" "docker-host" {
+resource "aws_instance" "dockerhost" {
   ami           = var.ami // ubuntu linux
   instance_type = var.instancetype
   key_name      = var.useastkeyname
   vpc_security_group_ids = ["sg-002d15a754884e25e"] // WebDMZ
   tags = {
-  Name = "docker-host"
+  Name = "dockerhost"
   }
 
   root_block_device {
@@ -55,6 +55,10 @@ resource "aws_instance" "docker-host" {
       "sudo apt-get update -y",
       "sudo apt-get install ansible -y",
       "sudo apt-get install docker.io -y",
+      "sudo apt-get install docker-compose -y",
+      "sudo mkdir -p ~/circlelabs/portainer",
+      "sudo wget -P ~/circlelabs/portainer/ https://downloads.portainer.io/docker-compose.yml",
+      "sudo docker-compose -f ~/circlelabs/portainer/docker-compose.yml up -d",
     ]
   }
 
@@ -67,10 +71,9 @@ resource "aws_instance" "docker-host" {
 
 }
   
-/* Declare and assign elastic IP to instance
+/* Declare and assign elastic IP to instance */
  
 resource "aws_eip" "terraform-ip" {
     vpc = true
-    instance = aws_instance.terraform-01.id
+    instance = aws_instance.dockerhost.id
 } 
-*/
