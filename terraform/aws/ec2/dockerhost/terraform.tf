@@ -61,6 +61,7 @@ resource "aws_instance" "dockerhost" {
       "sudo mkdir -p ~/circlelabs/portainer",
       "sudo wget -P ~/circlelabs/portainer/ https://downloads.portainer.io/docker-compose.yml",
       "sudo docker-compose -f ~/circlelabs/portainer/docker-compose.yml up -d",
+      "sudo git clone git://github.com/mhellnerdev/devops.git",
     ]
   }
 
