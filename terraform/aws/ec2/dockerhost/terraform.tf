@@ -16,9 +16,9 @@ terraform {
   }
 }
 
-############################################################
+###################################
 /* Declare AWS EC2 Docker Host */
-############################################################
+###################################
 
 resource "aws_instance" "dockerhost" {
   ami           = var.ami // ubuntu linux
@@ -62,6 +62,7 @@ resource "aws_instance" "dockerhost" {
       "sudo wget -P ~/circlelabs/portainer/ https://downloads.portainer.io/docker-compose.yml",
       "sudo docker-compose -f ~/circlelabs/portainer/docker-compose.yml up -d",
       "sudo git clone git://github.com/mhellnerdev/devops.git",
+      "sudo docker-compose -f ~/devops/docker/jenkins-artifactory/docker-compose.yml up -d",
     ]
   }
 
