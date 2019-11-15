@@ -14,3 +14,4 @@ This is a code repository for:
 - docker exec -it <containter id> /bin/bash
 
 - docker tag <old image> <new image> - useful for when you make changes inside the container
+- docker commit - commits changes to new tag
