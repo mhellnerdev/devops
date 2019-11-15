@@ -12,3 +12,5 @@ This is a code repository for:
 
 - docker build -t <tag name> .
 - docker exec -it <containter id> /bin/bash
+
+- docker tag <old image> <new image> - useful for when you make changes inside the container
