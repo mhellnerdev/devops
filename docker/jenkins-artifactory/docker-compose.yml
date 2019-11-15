@@ -1,26 +1,38 @@
 version: '3.3'
+
+# Define volumes
+volumes:
+  jenkins:
+  artifactory:
+
+# Define networks
+networks:
+  ci_net: # name of network
+    driver: bridge
+    ipam: # IP Adress Management Section
+      driver: default
+      config:
+        - subnet: 192.168.70.0/24
+
+# Define Services and containers
 services:
     jenkins:
-      image: "jenkins/jenkins:lts"
-      networks:
-        - ci_net
+      image: "jenkins/jenkins:lts" # long term support tag
       ports:
-        - "7000:8080"
-        - "50000:50000"
+        - "7000:8080" # localhost -> container
+        - "50000:50000" # port 50000 gives you access to a remote Java (JIRA) API
+      networks:
+        ci_net:
+          ipv4_address: 192.168.70.10
       volumes:
         - "jenkins:/var/jenkins_home_lts"
 
     artifactory:
       image: "docker.bintray.io/jfrog/artifactory-oss"
-      networks:
-        - ci_net
       ports:
-        - "8086:8081"
+        - "8086:8081" # localhost -> container
+      networks:
+        ci_net:
+          ipv4_address: 192.168.70.20
       volumes:
         - "artifactory:/var/opt/jfrog/artifactory"
-
-volumes:
-  jenkins:
-  artifactory:
-networks:
-  ci_net:
