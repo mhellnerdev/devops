@@ -45,7 +45,7 @@ resource "aws_instance" "dockerhost" {
     host     = self.public_ip
   }
 
-/* Remote commands - Install Ansible and dependencies */
+/* Remote commands - Install Ansible, Docker, and dependencies */
 
   provisioner "remote-exec" {
     inline = [
