@@ -11,4 +11,33 @@
 
 - Avoid below workflow in most cases
 - docker tag old image new image - useful for when you make changes inside the container
-- docker commit - commits changes to new tag
+- docker commit - commits changes to new tag.
+├── cms
+│   ├── drupal
+│   │   ├── docker-compose.yml
+│   │   └── readme.md
+│   ├── joomla
+│   │   └── docker-compose.yml
+│   └── wordpress
+│       ├── docker-compose.yml
+│       └── Dockerfile
+├── jenkins-artifactory
+│   └── docker-compose.yml
+├── nginx-lemp-laravel
+│   ├── docker-compose.yml
+│   ├── Dockerfile.nginx
+│   ├── Dockerfile.old
+│   └── urls.txt
+├── portainer
+│   └── docker-compose.yml
+├── README.md
+└── ubuntu-base
+    ├── docker-compose.yml
+    ├── Dockerfile
+    ├── Dockerfile.scratch
+    ├── hellodocker.sh
+    ├── persist-data
+    │   └── readme.md
+    └── README.md
+
+9 directories, 18 files
