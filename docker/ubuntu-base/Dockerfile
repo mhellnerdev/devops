@@ -1,10 +1,11 @@
-FROM ubuntu
+FROM ubuntu:18.04
 
 COPY hellodocker.sh /home
 COPY install.sh /home
 
-CMD sh /home/hellodocker.sh
-CMD sh /home/install.sh
+RUN mkdir /home/output
 
-# CMD ["sh /home/hellodocker.sh", "sleep 2", "sh /home/install.sh", "sleep 5"]
+RUN apt-get update -y && apt-get upgrade -y
+RUN apt-get install tree
 
+CMD sh /home/install.sh > /home/output/log.md && cat /home/output/log.md

@@ -1,5 +1,7 @@
 #!/bin/bash
 
 printf "Hello DOCKER\n"
+
 sleep 2
-ls -lah /home
+
+tree /

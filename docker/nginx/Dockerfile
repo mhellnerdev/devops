@@ -10,8 +10,7 @@ RUN apt-get install nginx -y
 EXPOSE 80
 EXPOSE 443
  
-CMD cat /app/urls.txt
-CMD service nginx start
+CMD cat /app/urls.txt && service nginx start
 
 # allows for nginx to stay running. run docker run -d
 CMD ["nginx", "-g", "daemon off;"]
