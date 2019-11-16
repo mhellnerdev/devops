@@ -7,23 +7,17 @@ services:
     restart: always
     ports:
       - 8080:80
-    environment:
-      WORDPRESS_DB_HOST: db
-      WORDPRESS_DB_USER: wordpress-db-user
-      WORDPRESS_DB_PASSWORD: wp-pass
-      WORDPRESS_DB_NAME: wordpressdb
+    env_file: .env
     volumes:
-      - wordpress:/var/www/html
+#      - ./html:/var/www/html # creates volume in local docker folder
+       - wordpress:/var/www/html
 
   db:
     image: mysql:5.7
     restart: always
-    environment:
-      MYSQL_DATABASE: wordpressdb
-      MYSQL_USER: wordpress-db-user
-      MYSQL_PASSWORD: wp-pass
-      MYSQL_RANDOM_ROOT_PASSWORD: '1'
+    env_file: .env
     volumes:
+#     - ./database:/var/lib/mysql # creates volume in local docker folder
       - db:/var/lib/mysql
 
 volumes:
