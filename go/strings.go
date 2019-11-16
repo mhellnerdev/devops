@@ -1,13 +1,13 @@
 package main
 
- import "fmt"
+import "fmt"
 
 func main() {
-	var name = "Destinee"
+	var name = "Circle"
 
 	fmt.Println(name)
 
-	name = "Mark"
+	name = "Labs"
 
 	fmt.Println(name)
 }
