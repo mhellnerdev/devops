@@ -1,0 +1,9 @@
+version: '3.3'
+
+services:
+  circlelabs-ubuntu-base:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./persist-data:/home/output # creates volume in local docker folder

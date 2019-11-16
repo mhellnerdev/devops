@@ -1,0 +1,25 @@
+version: '3.3'
+
+services:
+
+  wordpress:
+    image: wordpress
+    restart: always
+    ports:
+      - 8080:80
+    env_file: .env
+    volumes:
+#      - ./html:/var/www/html # creates volume in local docker folder
+       - wordpress:/var/www/html
+
+  db:
+    image: mysql:5.7
+    restart: always
+    env_file: .env
+    volumes:
+#     - ./database:/var/lib/mysql # creates volume in local docker folder
+      - db:/var/lib/mysql
+
+volumes:
+  wordpress:
+  db:
