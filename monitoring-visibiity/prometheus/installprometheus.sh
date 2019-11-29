@@ -1,5 +1,5 @@
 #!/bin/bash
-PROMETHEUS_VERSION="2.2.1"
+PROMETHEUS_VERSION="2.14.0"
 wget https://github.com/prometheus/prometheus/releases/download/v2.14.0/prometheus-2.14.0.linux-amd64.tar.gz
 tar -xzvf prometheus-2.14.0.linux-amd64.tar.gz
 cd prometheus-2.14.0.linux-amd64/
