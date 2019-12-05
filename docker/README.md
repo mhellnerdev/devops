@@ -12,3 +12,6 @@
 - Avoid below workflow in most cases
 - docker tag old image new image - useful for when you make changes inside the container
 - docker commit - commits changes to new tag.
+
+#### docker-compose
+- sudo docker-compose up -d
