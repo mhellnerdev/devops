@@ -58,3 +58,13 @@ operations/variable-scripts/variable.json
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+
+### Vagrant ###
+# General
+.vagrant/
+
+# Log files (if you are creating logs in debug mode, uncomment this)
+# *.log
+
+### Vagrant Patch ###
+*.box
