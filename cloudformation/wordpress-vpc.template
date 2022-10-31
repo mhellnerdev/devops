@@ -47,7 +47,7 @@ Resources:
       InstanceTenancy: 'default'
       Tags:
         - Key: Name
-          Value: Wordpress-Prod-VPC
+          Value: Wordpress Prod VPC
         - Key: Project
           Value: Wordpress-Prod
 
