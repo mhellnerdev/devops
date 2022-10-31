@@ -1,0 +1,251 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: VPC for Wordpress Architercture
+
+Parameters:
+  WordpressVpcCIDR:
+    Description: Please enter the IP range (CIDR notation) for this VPC
+    Type: String
+    Default: 10.0.0.0/16
+
+  WordpressPublicSubnetAz1CIDR:
+    Description: Please enter the IP range (CIDR notation) for the Public Subnet for Availability Zone 1
+    Type: String
+    Default: 10.0.0.0/24
+
+  WordpressPublicSubnetAz2CIDR:
+    Description: Please enter the IP range (CIDR notation) for the Public Subnet for Availability Zone 2
+    Type: String
+    Default: 10.0.1.0/24
+
+  WordpressPrivateAppSubnetAz1CIDR:
+    Description: Please enter the IP range (CIDR notation) for the Private App Subnet for Availability Zone 1
+    Type: String
+    Default: 10.0.2.0/24
+
+  WordpressPrivateAppSubnetAz2CIDR:
+    Description: Please enter the IP range (CIDR notation) for the Private App Subnet for Availability Zone 2
+    Type: String
+    Default: 10.0.3.0/24
+
+  WordpressPrivateDataSubnetAz1CIDR:
+    Description: Please enter the IP range (CIDR notation) for the Private Data Subnet for Availability Zone 1
+    Type: String
+    Default: 10.0.4.0/24
+
+  WordpressPrivateDataSubnetAz2CIDR:
+    Description: Please enter the IP range (CIDR notation) for the Private Data Subnet for Availability Zone 2
+    Type: String
+    Default: 10.0.5.0/24
+
+Resources:
+  WordpressProdVpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref WordpressVpcCIDR
+      EnableDnsHostnames: 'true'
+      EnableDnsSupport: 'true'
+      InstanceTenancy: 'default'
+      Tags:
+        - Key: Name
+          Value: Wordpress-Prod-VPC
+        - Key: Project
+          Value: Wordpress-Prod
+
+  WordpressProdIGW:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Wordpress Prod IGW
+        - Key: Project
+          Value: Wordpress Prod
+
+  WordpressProdIGWAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref WordpressProdIGW
+      VpcId: !Ref WordpressProdVpc
+
+  WordpressProdPublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref WordpressProdVpc
+      AvailabilityZone: !Select [0, !GetAZs '']
+      CidrBlock: !Ref WordpressPublicSubnetAz1CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: Wordpress Prod Public Subnet AZ1
+        - Key: Project
+          Value: Wordpress Prod
+
+  WordpressProdPublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref WordpressProdVpc
+      AvailabilityZone: !Select [1, !GetAZs '']
+      CidrBlock: !Ref WordpressPublicSubnetAz2CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: Wordpress Prod Public Subnet AZ2
+        - Key: Project
+          Value: Wordpress Prod
+
+  WordpressProdPrivateAppSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref WordpressProdVpc
+      AvailabilityZone: !Select [0, !GetAZs '']
+      CidrBlock: !Ref WordpressPrivateAppSubnetAz1CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: Wordpress Prod Private App Subnet AZ1
+        - Key: Project
+          Value: Wordpress Prod
+
+  WordpressProdPrivateAppSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref WordpressProdVpc
+      AvailabilityZone: !Select [1, !GetAZs '']
+      CidrBlock: !Ref WordpressPrivateAppSubnetAz2CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: Wordpress Prod Private App Subnet AZ2
+        - Key: Project
+          Value: Wordpress Prod
+
+  WordpressProdPrivateDataSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref WordpressProdVpc
+      AvailabilityZone: !Select [0, !GetAZs '']
+      CidrBlock: !Ref WordpressPrivateDataSubnetAz1CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: Wordpress Prod Private Data Subnet AZ1
+        - Key: Project
+          Value: Wordpress Prod
+
+  WordpressProdPrivateDataSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref WordpressProdVpc
+      AvailabilityZone: !Select [1, !GetAZs '']
+      CidrBlock: !Ref WordpressPrivateDataSubnetAz2CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: Wordpress Prod Private Data Subnet AZ2
+        - Key: Project
+          Value: Wordpress Prod
+
+  WordpressProdNgw1Eip:
+    Type: AWS::EC2::EIP
+    DependsOn: WordpressProdIGWAttachment
+    Properties:
+      Domain: vpc
+
+  WordpressProdNgw2Eip:
+    Type: AWS::EC2::EIP
+    DependsOn: WordpressProdIGWAttachment
+    Properties:
+      Domain: vpc
+
+  WordpressProdNgw1:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt WordpressProdNgw1Eip.AllocationId
+      SubnetId: !Ref WordpressProdPublicSubnet1
+
+  WordpressProdNgw2:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt WordpressProdNgw2Eip.AllocationId
+      SubnetId: !Ref WordpressProdPublicSubnet2
+
+  WordpressProdPublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref WordpressProdVpc
+      Tags:
+        - Key: Name
+          Value: Wordpress Prod Public Routes
+
+  WordpressProdPublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: WordpressProdIGWAttachment
+    Properties:
+      RouteTableId: !Ref WordpressProdPublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref WordpressProdIGW
+
+  WordpressProdPublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref WordpressProdPublicRouteTable
+      SubnetId: !Ref WordpressProdPublicSubnet1
+
+  WordpressProdPublicSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref WordpressProdPublicRouteTable
+      SubnetId: !Ref WordpressProdPublicSubnet2
+
+  WordpressProdPrivateRouteTable1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref WordpressProdVpc
+      Tags:
+        - Key: Name
+          Value: Wordpress Prod Private Routes AZ1
+
+  WordpressProdPrivateAppRoute1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref WordpressProdPrivateRouteTable1
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref WordpressProdNgw1
+
+  WordpressProdPrivateAppSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref WordpressProdPrivateRouteTable1
+      SubnetId: !Ref WordpressProdPrivateAppSubnet1
+
+  WordpressProdPrivateDataSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref WordpressProdPrivateRouteTable1
+      SubnetId: !Ref WordpressProdPrivateDataSubnet1
+
+  WordpressProdPrivateRouteTable2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref WordpressProdVpc
+      Tags:
+        - Key: Name
+          Value: Wordpress Prod Private Routes AZ2
+
+  WordpressProdPrivateAppRoute2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref WordpressProdPrivateRouteTable2
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref WordpressProdNgw2
+
+  WordpressProdPrivateAppSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref WordpressProdPrivateRouteTable2
+      SubnetId: !Ref WordpressProdPrivateAppSubnet2
+
+  WordpressProdPrivateDataSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref WordpressProdPrivateRouteTable2
+      SubnetId: !Ref WordpressProdPrivateDataSubnet2

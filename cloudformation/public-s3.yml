@@ -1,8 +1,0 @@
-Resources:
-  S3Bucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: 385814564564563456
-      AccessControl: PublicRead
-      WebsiteConfiguration:
-        IndexDocument: index.html
