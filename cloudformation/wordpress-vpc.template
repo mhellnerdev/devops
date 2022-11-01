@@ -38,6 +38,7 @@ Parameters:
     Default: 10.0.5.0/24
 
 Resources:
+  # VPC Describe
   WordpressProdVpc:
     Type: AWS::EC2::VPC
     Properties:
@@ -249,3 +250,42 @@ Resources:
     Properties:
       RouteTableId: !Ref WordpressProdPrivateRouteTable2
       SubnetId: !Ref WordpressProdPrivateDataSubnet2
+
+  # Security Group Description
+  WordpressProdSSHSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: Wordpress Prod SSH Security Group
+      GroupDescription: Wordpress Prod SSH Security Group
+      VpcId: !Ref WordpressProdVpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: Wordpress Prod SSH Security Group
+        - Key: Project
+          Value: Wordpress Prod
+
+  WordpressProdALBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: Wordpress Prod ALB Security Group
+      GroupDescription: Wordpress ALB SSH Security Group
+      VpcId: !Ref WordpressProdVpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: Wordpress Prod ALB Security Group
+        - Key: Project
+          Value: Wordpress Prod
