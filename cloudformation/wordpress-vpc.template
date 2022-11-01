@@ -411,3 +411,42 @@ Resources:
       PubliclyAccessible: false
       VPCSecurityGroups:
         - !GetAtt WordpressProdDatabaseSecurityGroup.GroupId
+      Tags:
+        - Key: Project
+          Value: Wordpress Prod
+
+  WordpressProdEFS:
+    Type: AWS::EFS::FileSystem
+    Properties:
+      Encrypted: false
+      FileSystemTags:
+        - Key: Name
+          Value: Wordpress-Prod-EFS
+    DeletionPolicy: Delete
+
+  WordpressProdEFSMount1:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref WordpressProdEFS
+      SecurityGroups:
+        - !Ref WordpressProdEFSSecurityGroup
+      SubnetId: !Ref WordpressProdPrivateDataSubnet1
+
+  WordpressProdEFSMount2:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref WordpressProdEFS
+      SecurityGroups:
+        - !Ref WordpressProdEFSSecurityGroup
+      SubnetId: !Ref WordpressProdPrivateDataSubnet2
+
+Outputs:
+  RDSEndpoint:
+    Description: Enpoint Address of RDS database
+    Value: !GetAtt RDSDBInstance.Endpoint.Address
+  EFSFileSystemId:
+    Description: Filesystem ID of EFS
+    Value: !GetAtt WordpressProdEFS.FileSystemId
+  EFSFileSystemArn:
+    Description: Filesystem ARN of EFS
+    Value: !GetAtt WordpressProdEFS.Arn
