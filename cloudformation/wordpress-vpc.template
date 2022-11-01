@@ -289,3 +289,76 @@ Resources:
           Value: Wordpress Prod ALB Security Group
         - Key: Project
           Value: Wordpress Prod
+
+  WordpressProdWebserverSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: Wordpress Prod Webserver Security Group
+      GroupDescription: Wordpress Webserver SSH Security Group
+      VpcId: !Ref WordpressProdVpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId: !Ref WordpressProdALBSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          SourceSecurityGroupId: !Ref WordpressProdALBSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          SourceSecurityGroupId: !Ref WordpressProdSSHSecurityGroup
+      Tags:
+        - Key: Name
+          Value: Wordpress Prod Webserver Security Group
+        - Key: Project
+          Value: Wordpress Prod
+
+  WordpressProdDatabaseSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: Wordpress Prod Database Security Group
+      GroupDescription: Wordpress Database SSH Security Group
+      VpcId: !Ref WordpressProdVpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          SourceSecurityGroupId: !Ref WordpressProdWebserverSecurityGroup
+      Tags:
+        - Key: Name
+          Value: Wordpress Prod Database Security Group
+        - Key: Project
+          Value: Wordpress Prod
+
+  WordpressProdEFSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: Wordpress Prod EFS Security Group
+      GroupDescription: Wordpress EFS SSH Security Group
+      VpcId: !Ref WordpressProdVpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 2049
+          ToPort: 2049
+          SourceSecurityGroupId: !Ref WordpressProdWebserverSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          SourceSecurityGroupId: !Ref WordpressProdSSHSecurityGroup
+      Tags:
+        - Key: Name
+          Value: Wordpress Prod EFS Security Group
+        - Key: Project
+          Value: Wordpress Prod
+
+  # Needed to reference self for an inbound rule
+  WordpressProdEFSSecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref WordpressProdEFSSecurityGroup
+      IpProtocol: tcp
+      FromPort: 2049
+      ToPort: 2049
+      SourceSecurityGroupId: !Ref WordpressProdEFSSecurityGroup
