@@ -407,7 +407,7 @@ Resources:
       EngineVersion: '5.7.39'
       MultiAZ: false
       MasterUsername: 'dbadmin'
-      MasterUserPassword: 'dbadmin123' #TODO Resolve from SSM
+      MasterUserPassword: 'dbadmin123' #TODO Resolve from SSM or put in Parameters with NoEcho
       PubliclyAccessible: false
       VPCSecurityGroups:
         - !GetAtt WordpressProdDatabaseSecurityGroup.GroupId
