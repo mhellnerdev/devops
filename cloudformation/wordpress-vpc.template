@@ -1,6 +1,7 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: VPC for Wordpress Architercture
 
+# Parameters section
 Parameters:
   WordpressVpcCIDR:
     Description: Please enter the IP range (CIDR notation) for this VPC
@@ -37,8 +38,9 @@ Parameters:
     Type: String
     Default: 10.0.5.0/24
 
+# Resources Section
 Resources:
-  # VPC Describe
+  # VPC Description
   WordpressProdVpc:
     Type: AWS::EC2::VPC
     Properties:
@@ -52,6 +54,7 @@ Resources:
         - Key: Project
           Value: Wordpress-Prod
 
+  # Internet Gateway
   WordpressProdIGW:
     Type: AWS::EC2::InternetGateway
     Properties:
@@ -67,6 +70,7 @@ Resources:
       InternetGatewayId: !Ref WordpressProdIGW
       VpcId: !Ref WordpressProdVpc
 
+  # Public Subnets
   WordpressProdPublicSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
@@ -93,6 +97,7 @@ Resources:
         - Key: Project
           Value: Wordpress Prod
 
+  # Private App Subnets
   WordpressProdPrivateAppSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
@@ -119,6 +124,7 @@ Resources:
         - Key: Project
           Value: Wordpress Prod
 
+  # Private Data subnets. This is where NFS will live.
   WordpressProdPrivateDataSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
@@ -145,6 +151,7 @@ Resources:
         - Key: Project
           Value: Wordpress Prod
 
+  # Elastic IP's
   WordpressProdNgw1Eip:
     Type: AWS::EC2::EIP
     DependsOn: WordpressProdIGWAttachment
@@ -157,6 +164,7 @@ Resources:
     Properties:
       Domain: vpc
 
+  # NAT Gateways
   WordpressProdNgw1:
     Type: AWS::EC2::NatGateway
     Properties:
@@ -169,6 +177,7 @@ Resources:
       AllocationId: !GetAtt WordpressProdNgw2Eip.AllocationId
       SubnetId: !Ref WordpressProdPublicSubnet2
 
+  # Public Route Table
   WordpressProdPublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
@@ -197,6 +206,7 @@ Resources:
       RouteTableId: !Ref WordpressProdPublicRouteTable
       SubnetId: !Ref WordpressProdPublicSubnet2
 
+  # Private Route Table 1
   WordpressProdPrivateRouteTable1:
     Type: AWS::EC2::RouteTable
     Properties:
@@ -205,6 +215,7 @@ Resources:
         - Key: Name
           Value: Wordpress Prod Private Routes AZ1
 
+  # Associate NAT Gateway 1 with App Route 1
   WordpressProdPrivateAppRoute1:
     Type: AWS::EC2::Route
     Properties:
@@ -212,6 +223,7 @@ Resources:
       DestinationCidrBlock: 0.0.0.0/0
       NatGatewayId: !Ref WordpressProdNgw1
 
+  # Associate App and Data Subnets
   WordpressProdPrivateAppSubnet1RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
@@ -224,6 +236,7 @@ Resources:
       RouteTableId: !Ref WordpressProdPrivateRouteTable1
       SubnetId: !Ref WordpressProdPrivateDataSubnet1
 
+  # Private Route Table 2
   WordpressProdPrivateRouteTable2:
     Type: AWS::EC2::RouteTable
     Properties:
@@ -232,6 +245,7 @@ Resources:
         - Key: Name
           Value: Wordpress Prod Private Routes AZ2
 
+  # Associate NAT Gateway with App route 2
   WordpressProdPrivateAppRoute2:
     Type: AWS::EC2::Route
     Properties:
@@ -239,6 +253,7 @@ Resources:
       DestinationCidrBlock: 0.0.0.0/0
       NatGatewayId: !Ref WordpressProdNgw2
 
+  # Associate App and Data subnets
   WordpressProdPrivateAppSubnet2RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
@@ -251,7 +266,7 @@ Resources:
       RouteTableId: !Ref WordpressProdPrivateRouteTable2
       SubnetId: !Ref WordpressProdPrivateDataSubnet2
 
-  # Security Group Description
+  # Security Groups
   WordpressProdSSHSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -273,7 +288,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupName: Wordpress Prod ALB Security Group
-      GroupDescription: Wordpress ALB SSH Security Group
+      GroupDescription: Wordpress ALB Security Group
       VpcId: !Ref WordpressProdVpc
       SecurityGroupIngress:
         - IpProtocol: tcp
@@ -294,7 +309,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupName: Wordpress Prod Webserver Security Group
-      GroupDescription: Wordpress Webserver SSH Security Group
+      GroupDescription: Wordpress Webserver Security Group
       VpcId: !Ref WordpressProdVpc
       SecurityGroupIngress:
         - IpProtocol: tcp
@@ -319,7 +334,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupName: Wordpress Prod Database Security Group
-      GroupDescription: Wordpress Database SSH Security Group
+      GroupDescription: Wordpress Database Security Group
       VpcId: !Ref WordpressProdVpc
       SecurityGroupIngress:
         - IpProtocol: tcp
@@ -336,7 +351,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupName: Wordpress Prod EFS Security Group
-      GroupDescription: Wordpress EFS SSH Security Group
+      GroupDescription: Wordpress EFS Security Group
       VpcId: !Ref WordpressProdVpc
       SecurityGroupIngress:
         - IpProtocol: tcp
@@ -353,7 +368,7 @@ Resources:
         - Key: Project
           Value: Wordpress Prod
 
-  # Needed to reference self for an inbound rule
+  # This resource type is needed to reference self for inbound rule on above resource
   WordpressProdEFSSecurityGroupIngress:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
@@ -362,3 +377,37 @@ Resources:
       FromPort: 2049
       ToPort: 2049
       SourceSecurityGroupId: !Ref WordpressProdEFSSecurityGroup
+
+  # RDS Subnet Group
+  WordpressDBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupName: Wordpress Prod Database Subnets
+      DBSubnetGroupDescription: Wordpress Prod Database Subnets
+      SubnetIds:
+        - !Ref WordpressProdPrivateDataSubnet1
+        - !Ref WordpressProdPrivateDataSubnet2
+      Tags:
+        - Key: Project
+          Value: Wordpress Prod
+
+  # RDS Instance
+  RDSDBInstance:
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Delete
+    Properties:
+      AllocatedStorage: 20
+      AvailabilityZone: !Select [1, !GetAZs '']
+      BackupRetentionPeriod: 1
+      DBInstanceClass: 'db.t2.micro'
+      DBInstanceIdentifier: 'wordpress-db'
+      DBName: 'wordpress_db'
+      DBSubnetGroupName: !Ref WordpressDBSubnetGroup
+      Engine: 'mysql'
+      EngineVersion: '5.7.39'
+      MultiAZ: false
+      MasterUsername: 'dbadmin'
+      MasterUserPassword: 'dbadmin123'
+      PubliclyAccessible: false
+      VPCSecurityGroups:
+        - !GetAtt WordpressProdDatabaseSecurityGroup.GroupId
