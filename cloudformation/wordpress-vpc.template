@@ -1,6 +1,13 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: VPC for Wordpress Architercture
 
+Mappings:
+  RegionMap:
+    us-east-1:
+      'AMI': 'ami-09d3b3274b6c5d4aa'
+    us-west-1:
+      'AMI': 'ami-017c001a88dd93847'
+
 # Parameters section
 Parameters:
   WordpressVpcCIDR:
@@ -439,6 +446,163 @@ Resources:
       SecurityGroups:
         - !Ref WordpressProdEFSSecurityGroup
       SubnetId: !Ref WordpressProdPrivateDataSubnet2
+
+  EC2InstallInstance:
+    Type: AWS::EC2::Instance
+    DeletionPolicy: Delete
+    Properties:
+      ImageId:
+        Fn::FindInMap:
+          - 'RegionMap'
+          - Ref: 'AWS::Region'
+          - 'AMI'
+      InstanceType: 't3a.micro'
+      InstanceInitiatedShutdownBehavior: terminate
+      KeyName: 'mhellnerdev-us-west-kp'
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: 'true'
+          DeleteOnTermination: 'true'
+          DeviceIndex: '0'
+          GroupSet:
+            - !Ref WordpressProdALBSecurityGroup
+            - !Ref WordpressProdWebserverSecurityGroup
+            - !Ref WordpressProdSSHSecurityGroup
+          SubnetId: !Ref WordpressProdPublicSubnet1
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          sudo su;
+          yum update -y;
+          mkdir -p /var/www/html;
+          mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport ${WordpressProdEFS}.efs.${AWS::Region}.amazonaws.com:/ /var/www/html;
+          sudo yum install -y httpd httpd-tools mod_ssl;
+          sudo systemctl enable httpd;
+          sudo systemctl start httpd;
+          sudo amazon-linux-extras enable php7.4;
+          sudo yum clean metadata;
+          sudo yum install php php-common php-pear -y;
+          sudo yum install php-{cgi,curl,mbstring,gd,mysqlnd,gettext,json,xml,fpm,intl,zip} -y;
+          sudo rpm -Uvh https://dev.mysql.com/get/mysql57-community-release-el7-11.noarch.rpm;
+          sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2022;
+          sudo yum install mysql-community-server -y;
+          sudo systemctl enable mysqld;
+          sudo systemctl start mysqld;
+          sudo usermod -a -G apache ec2-user
+          sudo chown -R ec2-user:apache /var/www
+          sudo chmod 2775 /var/www && find /var/www -type d -exec sudo chmod 2775 {} \;
+          sudo find /var/www -type f -exec sudo chmod 0664 {} \;
+          chown apache:apache -R /var/www/html;
+          wget https://wordpress.org/latest.tar.gz;
+          tar -xzf latest.tar.gz;
+          cp -r wordpress/* /var/www/html/;
+          cp /var/www/html/wp-config-sample.php /var/www/html/wp-config.php;
+          sudo sed -i 's/database_name_here/wordpress_db/g' /var/www/html/wp-config.php;
+          sudo sed -i 's/username_here/dbadmin/g' /var/www/html/wp-config.php;
+          sudo sed -i 's/password_here/dbadmin123/g' /var/www/html/wp-config.php; # TODO use SSM or parameters
+          sudo sed -i 's/localhost/${RDSDBInstance.Endpoint.Address}/g' /var/www/html/wp-config.php;
+          sudo service httpd restart
+    DependsOn:
+      - WordpressProdEFS
+      - WordpressProdEFSMount1
+
+  WordpressAppLaunchTemplate:
+    Type: 'AWS::EC2::LaunchTemplate'
+    Properties:
+      LaunchTemplateName: !Sub '${AWS::StackName}-launch-template-for-auto-scaling'
+      LaunchTemplateData:
+        NetworkInterfaces:
+          - DeviceIndex: 0
+            Groups:
+              - !Ref WordpressProdWebserverSecurityGroup
+            DeleteOnTermination: true
+        ImageId:
+          Fn::FindInMap:
+            - 'RegionMap'
+            - Ref: 'AWS::Region'
+            - 'AMI'
+        InstanceType: t2.micro
+        KeyName: 'mhellnerdev-us-west-kp'
+        UserData:
+          Fn::Base64: !Sub |
+            #!/bin/bash
+            yum update -y;
+            sudo yum install -y httpd httpd-tools mod_ssl;
+            sudo systemctl enable httpd;
+            sudo systemctl start httpd;
+            sudo amazon-linux-extras enable php7.4;
+            sudo yum clean metadata;
+            sudo yum install php php-common php-pear -y;
+            sudo yum install php-{cgi,curl,mbstring,gd,mysqlnd,gettext,json,xml,fpm,intl,zip} -y;
+            sudo rpm -Uvh https://dev.mysql.com/get/mysql57-community-release-el7-11.noarch.rpm;
+            sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2022;
+            sudo yum install mysql-community-server -y
+            sudo systemctl enable mysqld;
+            sudo systemctl start mysqld;
+            echo "${WordpressProdEFS}.efs.${AWS::Region}.amazonaws.com:/ /var/www/html nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0" >> /etc/fstab;
+            mount -a;
+            chown apache:apache -R /var/www/html;
+            sudo service httpd restart;
+
+  WordpressProdALBV2:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: WordpressALB
+      SecurityGroups:
+        - !Ref WordpressProdALBSecurityGroup
+      Subnets:
+        - !Ref WordpressProdPublicSubnet1
+        - !Ref WordpressProdPublicSubnet2
+      Tags:
+        - Key: Project
+          Value: Wordpress Prod
+      Type: application
+
+  WordpressTG:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckEnabled: true
+      HealthCheckIntervalSeconds: 300
+      HealthCheckPath: /
+      HealthCheckPort: 80
+      HealthCheckProtocol: HTTP
+      Name: Wordpress-TG
+      Port: 80
+      Protocol: HTTP
+      ProtocolVersion: HTTP1
+      Tags:
+        - Key: Project
+          Value: Wordpress Prod
+      TargetType: instance
+      UnhealthyThresholdCount: 2
+      VpcId: !Ref WordpressProdVpc
+
+  WordpressListener:
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref WordpressTG
+      LoadBalancerArn: !Ref WordpressProdALBV2
+      Port: '80'
+      Protocol: HTTP
+
+  WordpressASG:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      AutoScalingGroupName: Wordpress-ASG
+      HealthCheckGracePeriod: 100
+      HealthCheckType: ELB
+      LaunchTemplate:
+        LaunchTemplateId: !Ref WordpressAppLaunchTemplate
+        Version: !GetAtt WordpressAppLaunchTemplate.LatestVersionNumber
+      MaxSize: '4'
+      MinSize: '1'
+      DesiredCapacity: '2'
+      TargetGroupARNs:
+        - !Ref WordpressTG
+      VPCZoneIdentifier:
+        - !Ref WordpressProdPrivateAppSubnet1
+        - !Ref WordpressProdPrivateAppSubnet2
 
 Outputs:
   RDSEndpoint:
