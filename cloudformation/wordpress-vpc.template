@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: VPC for Wordpress Architercture
+Description: Multi-AZ Wordpress Architercture, with RDS, EFS, behind an auto-scaling group with and ALB
 
 Mappings:
   RegionMap:
@@ -10,6 +10,22 @@ Mappings:
 
 # Parameters section
 Parameters:
+  WordpressDomainName:
+    Description: Please enter the Route53 Hosted Zone you would like to assign to this stack. This must exist in your AWS account. This action will install an ACM Certificate via means of DNS validation.
+    Type: String
+    Default: example.com
+
+  WordpressDBUsername:
+    Description: Please enter the admin username the RDS instance will use for the created database. This is the username that will be used during setup of wordpress front-end.
+    Type: String
+    Default: dbadmin
+
+  WordpressDBPassword:
+    Description: Please enter the admin password the RDS instance will use for the created database. This is the password that will be used during setup of wordpress front-end. THIS PASSWORD MUST BE 8 OR MORE CHARACTERS.
+    Type: String
+    NoEcho: true
+    Default: dbadmin1234
+
   WordpressVpcCIDR:
     Description: Please enter the IP range (CIDR notation) for this VPC
     Type: String
@@ -47,6 +63,17 @@ Parameters:
 
 # Resources Section
 Resources:
+  # ACM TLS Cert
+  WordpressProdCert:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Ref WordpressDomainName
+      SubjectAlternativeNames:
+        - !Sub '*.${WordpressDomainName}'
+      # DomainValidationOptions:
+      #   - DomainName: !Ref WordpressDomainName
+      #     HostedZoneId: Z08384311A2NCJV4Q259B
+      ValidationMethod: DNS
   # VPC Description
   WordpressProdVpc:
     Type: AWS::EC2::VPC
@@ -413,8 +440,8 @@ Resources:
       Engine: 'mysql'
       EngineVersion: '5.7.39'
       MultiAZ: false
-      MasterUsername: 'dbadmin'
-      MasterUserPassword: 'dbadmin123' #TODO Resolve from SSM or put in Parameters with NoEcho
+      MasterUsername: !Ref WordpressDBUsername
+      MasterUserPassword: !Ref WordpressDBPassword
       PubliclyAccessible: false
       VPCSecurityGroups:
         - !GetAtt WordpressProdDatabaseSecurityGroup.GroupId
@@ -497,16 +524,37 @@ Resources:
           cp -r wordpress/* /var/www/html/;
           cp /var/www/html/wp-config-sample.php /var/www/html/wp-config.php;
           sudo sed -i 's/database_name_here/wordpress_db/g' /var/www/html/wp-config.php;
-          sudo sed -i 's/username_here/dbadmin/g' /var/www/html/wp-config.php;
-          sudo sed -i 's/password_here/dbadmin123/g' /var/www/html/wp-config.php; # TODO use SSM or parameters
+          sudo sed -i 's/username_here/${WordpressDBUsername}/g' /var/www/html/wp-config.php;
+          sudo sed -i 's/password_here/${WordpressDBPassword}/g' /var/www/html/wp-config.php;
           sudo sed -i 's/localhost/${RDSDBInstance.Endpoint.Address}/g' /var/www/html/wp-config.php;
+          ######### WORDPRESS CLI INSTALL HERE #########
+          curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar;
+          chmod +x wp-cli.phar;
+          sudo mv wp-cli.phar /usr/local/bin/wp;
+          wp core install --url="cantondiscovery.com" --title="cantondiscovery.com" --admin_user="admin" --admin_password="password" --admin_email="mhellnerdev@gmail.com" --path="/var/www/html"; # TODO get username and password from parameters
+          sudo service httpd restart;
+          ######### Setup SSL/TLS #########
+          echo "
+          /* SSL Settings */
+          define('FORCE_SSL_ADMIN', true);
+
+          // Get true SSL status from AWS load balancer
+          if(isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+            $_SERVER['HTTPS'] = '1';
+          }
+          " >> /var/www/html/wp-config.php
           sudo service httpd restart
+          sleep 300
+          sudo shutdown -h now
     DependsOn:
+      - RDSDBInstance
       - WordpressProdEFS
       - WordpressProdEFSMount1
-
+      - WordpressProdEFSMount2
+  ######################################################################
   WordpressAppLaunchTemplate:
     Type: 'AWS::EC2::LaunchTemplate'
+    # DependsOn: EC2InstallInstance
     Properties:
       LaunchTemplateName: !Sub '${AWS::StackName}-launch-template-for-auto-scaling'
       LaunchTemplateData:
@@ -545,6 +593,7 @@ Resources:
 
   WordpressProdALBV2:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    DependsOn: WordpressProdCert
     Properties:
       Name: WordpressALB
       SecurityGroups:
@@ -576,18 +625,43 @@ Resources:
       UnhealthyThresholdCount: 2
       VpcId: !Ref WordpressProdVpc
 
-  WordpressListener:
+  WordpressHttpListener:
     Type: 'AWS::ElasticLoadBalancingV2::Listener'
     Properties:
+      DefaultActions:
+        - Type: redirect
+          RedirectConfig:
+            Protocol: HTTPS
+            Port: 443
+            Host: '#{host}'
+            Path: '/#{path}'
+            Query: '#{query}'
+            StatusCode: 'HTTP_301'
+      LoadBalancerArn: !Ref WordpressProdALBV2
+      Port: '80'
+      Protocol: HTTP
+  WordpressHttpsListener:
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+    Properties:
+      Certificates:
+        - CertificateArn: !Ref WordpressProdCert
       DefaultActions:
         - Type: forward
           TargetGroupArn: !Ref WordpressTG
       LoadBalancerArn: !Ref WordpressProdALBV2
-      Port: '80'
-      Protocol: HTTP
+      Port: '443'
+      Protocol: HTTPS
 
   WordpressASG:
     Type: AWS::AutoScaling::AutoScalingGroup
+    DependsOn:
+      # - EC2InstallInstance
+      - RDSDBInstance
+      - WordpressProdNgw1
+      - WordpressProdNgw2
+      - WordpressProdEFS
+      - WordpressProdEFSMount1
+      - WordpressProdEFSMount2
     Properties:
       AutoScalingGroupName: Wordpress-ASG
       HealthCheckGracePeriod: 100
@@ -605,6 +679,9 @@ Resources:
         - !Ref WordpressProdPrivateAppSubnet2
 
 Outputs:
+  WordpressDomainName:
+    Description: Domain name where this wordpress stack is attached.
+    Value: !Ref WordpressDomainName
   RDSEndpoint:
     Description: Enpoint Address of RDS database
     Value: !GetAtt RDSDBInstance.Endpoint.Address
