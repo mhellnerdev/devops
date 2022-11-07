@@ -1,14 +1,17 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Multi-AZ Wordpress Architercture, with RDS, EFS, behind an auto-scaling group with and ALB
+Description: Multi-AZ Wordpress Architercture, with RDS, EFS, behind an application load balancer with an auto-scaling group.
 
 Mappings:
   RegionMap:
     us-east-1:
       'AMI': 'ami-09d3b3274b6c5d4aa'
+      'PEM': 'mhellnerdev-us-east-kp'
     us-west-1:
       'AMI': 'ami-017c001a88dd93847'
+      'PEM': 'mhellnerdev-us-west-kp'
     us-west-2:
       'AMI': 'ami-0d593311db5abb72b'
+      'PEM': 'mhellner-us-west2-kp'
 
 # Parameters section
 Parameters:
@@ -487,7 +490,11 @@ Resources:
           - 'AMI'
       InstanceType: 't2.micro'
       InstanceInitiatedShutdownBehavior: terminate
-      KeyName: 'mhellnerdev-us-west-kp'
+      KeyName:
+        Fn::FindInMap:
+          - 'RegionMap'
+          - Ref: 'AWS::Region'
+          - 'PEM'
       NetworkInterfaces:
         - AssociatePublicIpAddress: 'true'
           DeleteOnTermination: 'true'
@@ -497,6 +504,9 @@ Resources:
             - !Ref WordpressProdWebserverSecurityGroup
             - !Ref WordpressProdSSHSecurityGroup
           SubnetId: !Ref WordpressProdPublicSubnet1
+      Tags:
+        - Key: Name
+          Value: WordpressProdSetupInstance
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
@@ -529,28 +539,28 @@ Resources:
           sudo sed -i 's/username_here/${WordpressDBUsername}/g' /var/www/html/wp-config.php
           sudo sed -i 's/password_here/${WordpressDBPassword}/g' /var/www/html/wp-config.php
           sudo sed -i 's/localhost/${RDSDBInstance.Endpoint.Address}/g' /var/www/html/wp-config.php
-          ######### Setup SSL/TLS #########
-          echo "
-          /* SSL Settings */
-          define('FORCE_SSL_ADMIN', true);
-          define('FORCE_SSL_LOGIN', true);
-          define('WP_HOME','https://www.${WordpressDomainName}');
-          define('WP_SITEURL','https://www.${WordpressDomainName}');
-
-          // Get true SSL status from AWS load balancer
-          if ($_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https')
-            \$_SERVER['HTTPS']='on';
-
-          " >> /var/www/html/wp-config.php
-          sleep 150
           sudo service httpd restart
-
+          sudo mkdir /var/www/html/wp-content/uploads
+          sudo chmod 755 /var/www/html/wp-content/uploads
+          sudo service httpd restart
           ######### WORDPRESS CLI INSTALL HERE #########
           curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
           chmod +x wp-cli.phar
           sudo mv wp-cli.phar /usr/local/bin/wp
           wp core install --url="https://www.${WordpressDomainName}" --title="${WordpressDomainName}" --admin_user="admin" --admin_password="LongStrong123" --admin_email="mhellnerdev@gmail.com" --path="/var/www/html"
+          sleep 60
+          ######### Setup SSL/TLS #########
+          echo "
+          /* SSL Settings */
+          define('FORCE_SSL_ADMIN', true);
+          define('FORCE_SSL_LOGIN', true);
+
+          // Get true SSL status from AWS load balancer
+          if (isset(\$_SERVER['HTTP_X_FORWARDED_PROTO']) && \$_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https'){ \$_SERVER['HTTPS']='on'; }
+
+          " >> /var/www/html/wp-config.php
           sudo service httpd restart
+
           /opt/aws/bin/cfn-signal -s true '${WaitHandle}'
 
     DependsOn:
@@ -566,9 +576,9 @@ Resources:
     DependsOn: EC2InstallInstance
     Properties:
       Handle: !Ref WaitHandle
-      Timeout: 43200
+      Timeout: 1800
       Count: 1
-
+  #
   #####################################################################
   WordpressAppLaunchTemplate:
     Type: 'AWS::EC2::LaunchTemplate'
@@ -587,7 +597,11 @@ Resources:
             - Ref: 'AWS::Region'
             - 'AMI'
         InstanceType: t2.micro
-        KeyName: 'mhellnerdev-us-west-kp'
+        KeyName:
+          Fn::FindInMap:
+            - 'RegionMap'
+            - Ref: 'AWS::Region'
+            - 'PEM'
         UserData:
           Fn::Base64: !Sub |
             #!/bin/bash
