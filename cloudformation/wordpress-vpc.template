@@ -625,9 +625,7 @@ Resources:
 
   WordpressProdALBV2:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-    DependsOn:
-      - WordpressProdCert
-      - WaitCondition
+    DependsOn: WordpressProdCert
     Properties:
       Name: WordpressALB
       SecurityGroups:
