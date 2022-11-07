@@ -7,6 +7,8 @@ Mappings:
       'AMI': 'ami-09d3b3274b6c5d4aa'
     us-west-1:
       'AMI': 'ami-017c001a88dd93847'
+    us-west-2:
+      'AMI': 'ami-0d593311db5abb72b'
 
 # Parameters section
 Parameters:
@@ -483,7 +485,7 @@ Resources:
           - 'RegionMap'
           - Ref: 'AWS::Region'
           - 'AMI'
-      InstanceType: 't3a.micro'
+      InstanceType: 't2.micro'
       InstanceInitiatedShutdownBehavior: terminate
       KeyName: 'mhellnerdev-us-west-kp'
       NetworkInterfaces:
@@ -498,60 +500,76 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
-          sudo su;
-          yum update -y;
-          mkdir -p /var/www/html;
-          mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport ${WordpressProdEFS}.efs.${AWS::Region}.amazonaws.com:/ /var/www/html;
-          sudo yum install -y httpd httpd-tools mod_ssl;
-          sudo systemctl enable httpd;
-          sudo systemctl start httpd;
-          sudo amazon-linux-extras enable php7.4;
-          sudo yum clean metadata;
-          sudo yum install php php-common php-pear -y;
-          sudo yum install php-{cgi,curl,mbstring,gd,mysqlnd,gettext,json,xml,fpm,intl,zip} -y;
-          sudo rpm -Uvh https://dev.mysql.com/get/mysql57-community-release-el7-11.noarch.rpm;
-          sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2022;
-          sudo yum install mysql-community-server -y;
-          sudo systemctl enable mysqld;
-          sudo systemctl start mysqld;
+          sudo su
+          yum update -y
+          mkdir -p /var/www/html
+          mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport ${WordpressProdEFS}.efs.${AWS::Region}.amazonaws.com:/ /var/www/html
+          sudo yum install -y httpd httpd-tools mod_ssl
+          sudo systemctl enable httpd
+          sudo systemctl start httpd
+          sudo amazon-linux-extras enable php7.4
+          sudo yum clean metadata
+          sudo yum install php php-common php-pear -y
+          sudo yum install php-{cgi,curl,mbstring,gd,mysqlnd,gettext,json,xml,fpm,intl,zip} -y
+          sudo rpm -Uvh https://dev.mysql.com/get/mysql57-community-release-el7-11.noarch.rpm
+          sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2022
+          sudo yum install mysql-community-server -y
+          sudo systemctl enable mysqld
+          sudo systemctl start mysqld
           sudo usermod -a -G apache ec2-user
           sudo chown -R ec2-user:apache /var/www
           sudo chmod 2775 /var/www && find /var/www -type d -exec sudo chmod 2775 {} \;
           sudo find /var/www -type f -exec sudo chmod 0664 {} \;
-          chown apache:apache -R /var/www/html;
-          wget https://wordpress.org/latest.tar.gz;
-          tar -xzf latest.tar.gz;
-          cp -r wordpress/* /var/www/html/;
-          cp /var/www/html/wp-config-sample.php /var/www/html/wp-config.php;
-          sudo sed -i 's/database_name_here/wordpress_db/g' /var/www/html/wp-config.php;
-          sudo sed -i 's/username_here/${WordpressDBUsername}/g' /var/www/html/wp-config.php;
-          sudo sed -i 's/password_here/${WordpressDBPassword}/g' /var/www/html/wp-config.php;
-          sudo sed -i 's/localhost/${RDSDBInstance.Endpoint.Address}/g' /var/www/html/wp-config.php;
-          ######### WORDPRESS CLI INSTALL HERE #########
-          curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar;
-          chmod +x wp-cli.phar;
-          sudo mv wp-cli.phar /usr/local/bin/wp;
-          wp core install --url="cantondiscovery.com" --title="cantondiscovery.com" --admin_user="admin" --admin_password="password" --admin_email="mhellnerdev@gmail.com" --path="/var/www/html"; # TODO get username and password from parameters
-          sudo service httpd restart;
+          chown apache:apache -R /var/www/html
+          wget https://wordpress.org/latest.tar.gz
+          tar -xzf latest.tar.gz
+          cp -r wordpress/* /var/www/html/
+          cp /var/www/html/wp-config-sample.php /var/www/html/wp-config.php
+          sudo sed -i 's/database_name_here/wordpress_db/g' /var/www/html/wp-config.php
+          sudo sed -i 's/username_here/${WordpressDBUsername}/g' /var/www/html/wp-config.php
+          sudo sed -i 's/password_here/${WordpressDBPassword}/g' /var/www/html/wp-config.php
+          sudo sed -i 's/localhost/${RDSDBInstance.Endpoint.Address}/g' /var/www/html/wp-config.php
           ######### Setup SSL/TLS #########
           echo "
           /* SSL Settings */
           define('FORCE_SSL_ADMIN', true);
+          define('FORCE_SSL_LOGIN', true);
+          define('WP_HOME','https://www.${WordpressDomainName}');
+          define('WP_SITEURL','https://www.${WordpressDomainName}');
 
           // Get true SSL status from AWS load balancer
-          if(isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
-            $_SERVER['HTTPS'] = '1';
-          }
+          if ($_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https')
+            \$_SERVER['HTTPS']='on';
+
           " >> /var/www/html/wp-config.php
+          sleep 150
           sudo service httpd restart
-          sleep 300
-          sudo shutdown -h now
+
+          ######### WORDPRESS CLI INSTALL HERE #########
+          curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+          chmod +x wp-cli.phar
+          sudo mv wp-cli.phar /usr/local/bin/wp
+          wp core install --url="https://www.${WordpressDomainName}" --title="${WordpressDomainName}" --admin_user="admin" --admin_password="LongStrong123" --admin_email="mhellnerdev@gmail.com" --path="/var/www/html"
+          sudo service httpd restart
+          /opt/aws/bin/cfn-signal -s true '${WaitHandle}'
+
     DependsOn:
       - RDSDBInstance
       - WordpressProdEFS
       - WordpressProdEFSMount1
       - WordpressProdEFSMount2
-  ######################################################################
+
+  WaitHandle:
+    Type: AWS::CloudFormation::WaitConditionHandle
+  WaitCondition:
+    Type: AWS::CloudFormation::WaitCondition
+    DependsOn: EC2InstallInstance
+    Properties:
+      Handle: !Ref WaitHandle
+      Timeout: 43200
+      Count: 1
+
+  #####################################################################
   WordpressAppLaunchTemplate:
     Type: 'AWS::EC2::LaunchTemplate'
     # DependsOn: EC2InstallInstance
@@ -573,27 +591,29 @@ Resources:
         UserData:
           Fn::Base64: !Sub |
             #!/bin/bash
-            yum update -y;
-            sudo yum install -y httpd httpd-tools mod_ssl;
-            sudo systemctl enable httpd;
-            sudo systemctl start httpd;
-            sudo amazon-linux-extras enable php7.4;
-            sudo yum clean metadata;
-            sudo yum install php php-common php-pear -y;
-            sudo yum install php-{cgi,curl,mbstring,gd,mysqlnd,gettext,json,xml,fpm,intl,zip} -y;
-            sudo rpm -Uvh https://dev.mysql.com/get/mysql57-community-release-el7-11.noarch.rpm;
-            sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2022;
+            yum update -y
+            sudo yum install -y httpd httpd-tools mod_ssl
+            sudo systemctl enable httpd
+            sudo systemctl start httpd
+            sudo amazon-linux-extras enable php7.4
+            sudo yum clean metadata
+            sudo yum install php php-common php-pear -y
+            sudo yum install php-{cgi,curl,mbstring,gd,mysqlnd,gettext,json,xml,fpm,intl,zip} -y
+            sudo rpm -Uvh https://dev.mysql.com/get/mysql57-community-release-el7-11.noarch.rpm
+            sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2022
             sudo yum install mysql-community-server -y
-            sudo systemctl enable mysqld;
-            sudo systemctl start mysqld;
-            echo "${WordpressProdEFS}.efs.${AWS::Region}.amazonaws.com:/ /var/www/html nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0" >> /etc/fstab;
-            mount -a;
-            chown apache:apache -R /var/www/html;
-            sudo service httpd restart;
+            sudo systemctl enable mysqld
+            sudo systemctl start mysqld
+            echo "${WordpressProdEFS}.efs.${AWS::Region}.amazonaws.com:/ /var/www/html nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 0" >> /etc/fstab
+            mount -a
+            chown apache:apache -R /var/www/html
+            sudo service httpd restart
 
   WordpressProdALBV2:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-    DependsOn: WordpressProdCert
+    DependsOn:
+      - WordpressProdCert
+      - WaitCondition
     Properties:
       Name: WordpressALB
       SecurityGroups:
@@ -608,6 +628,7 @@ Resources:
 
   WordpressTG:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    DependsOn: WordpressProdALBV2
     Properties:
       HealthCheckEnabled: true
       HealthCheckIntervalSeconds: 300
@@ -633,13 +654,14 @@ Resources:
           RedirectConfig:
             Protocol: HTTPS
             Port: 443
-            Host: '#{host}'
-            Path: '/#{path}'
-            Query: '#{query}'
+            # Host: '#{host}'
+            # Path: '/#{path}'
+            # Query: '#{query}'
             StatusCode: 'HTTP_301'
       LoadBalancerArn: !Ref WordpressProdALBV2
       Port: '80'
       Protocol: HTTP
+
   WordpressHttpsListener:
     Type: 'AWS::ElasticLoadBalancingV2::Listener'
     Properties:
@@ -655,7 +677,7 @@ Resources:
   WordpressASG:
     Type: AWS::AutoScaling::AutoScalingGroup
     DependsOn:
-      # - EC2InstallInstance
+      - WordpressProdALBV2
       - RDSDBInstance
       - WordpressProdNgw1
       - WordpressProdNgw2
