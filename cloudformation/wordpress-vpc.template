@@ -578,7 +578,7 @@ Resources:
       Handle: !Ref WaitHandle
       Timeout: 1800
       Count: 1
-  #
+
   #####################################################################
   WordpressAppLaunchTemplate:
     Type: 'AWS::EC2::LaunchTemplate'
