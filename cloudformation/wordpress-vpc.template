@@ -416,7 +416,6 @@ Resources:
       FromPort: 2049
       ToPort: 2049
       SourceSecurityGroupId: !Ref WordpressProdEFSSecurityGroup
-
   # RDS Subnet Group
   WordpressDBSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
@@ -429,7 +428,6 @@ Resources:
       Tags:
         - Key: Project
           Value: Wordpress Prod
-
   # RDS Instance
   RDSDBInstance:
     Type: AWS::RDS::DBInstance
@@ -533,33 +531,33 @@ Resources:
           chown apache:apache -R /var/www/html
           wget https://wordpress.org/latest.tar.gz
           tar -xzf latest.tar.gz
-          cp -r wordpress/* /var/www/html/
-          cp /var/www/html/wp-config-sample.php /var/www/html/wp-config.php
+          # cp -r wordpress/* /var/www/html/
+          # cp /var/www/html/wp-config-sample.php /var/www/html/wp-config.php
+          wp core download --path='/var/www/html'
+
           sudo sed -i 's/database_name_here/wordpress_db/g' /var/www/html/wp-config.php
           sudo sed -i 's/username_here/${WordpressDBUsername}/g' /var/www/html/wp-config.php
           sudo sed -i 's/password_here/${WordpressDBPassword}/g' /var/www/html/wp-config.php
           sudo sed -i 's/localhost/${RDSDBInstance.Endpoint.Address}/g' /var/www/html/wp-config.php
           sudo service httpd restart
           sudo mkdir /var/www/html/wp-content/uploads
-          sudo chmod 755 /var/www/html/wp-content/uploads
+          sudo chmod -R 755 /var/www/html/wp-content/uploads
+          sudo service httpd restart
+          ######### Setup SSL/TLS #########
+          echo "
+          /* SSL Settings */
+          define('FORCE_SSL_ADMIN', true);
+
+          // Get true SSL status from AWS load balancer
+          if(isset(\$_SERVER['HTTP_X_FORWARDED_PROTO']) && \$_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+            \$_SERVER['HTTPS'] = '1';
+          }
+          " >> /var/www/html/wp-config.php
           sudo service httpd restart
           ######### WORDPRESS CLI INSTALL HERE #########
           curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
           chmod +x wp-cli.phar
           sudo mv wp-cli.phar /usr/local/bin/wp
-          wp core install --url="https://www.${WordpressDomainName}" --title="${WordpressDomainName}" --admin_user="admin" --admin_password="LongStrong123" --admin_email="mhellnerdev@gmail.com" --path="/var/www/html"
-          sleep 60
-          ######### Setup SSL/TLS #########
-          echo "
-          /* SSL Settings */
-          define('FORCE_SSL_ADMIN', true);
-          define('FORCE_SSL_LOGIN', true);
-
-          // Get true SSL status from AWS load balancer
-          if (isset(\$_SERVER['HTTP_X_FORWARDED_PROTO']) && \$_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https'){ \$_SERVER['HTTPS']='on'; }
-
-          " >> /var/www/html/wp-config.php
-          sudo service httpd restart
 
           /opt/aws/bin/cfn-signal -s true '${WaitHandle}'
 
@@ -576,9 +574,8 @@ Resources:
     DependsOn: EC2InstallInstance
     Properties:
       Handle: !Ref WaitHandle
-      Timeout: 1800
+      Timeout: 3600
       Count: 1
-
   #####################################################################
   WordpressAppLaunchTemplate:
     Type: 'AWS::EC2::LaunchTemplate'
