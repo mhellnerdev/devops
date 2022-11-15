@@ -30,3 +30,18 @@ EOF
 sudo apt update
 sudo apt install -y kubelet=1.24.0-00 kubeadm=1.24.0-00 kubectl=1.24.0-00
 sudo apt-mark hold kubelet kubeadm kubectl
+
+sudo kubeadm init --pod-network-cidr 192.168.0.0/16 --kubernetes-version 1.24.0
+
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+# install network add-on
+kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
+
+# get join command for worker nodes
+kubeadm token create --print-join-command
+
+# install kube dashboard
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.6.1/aio/deploy/recommended.yaml
