@@ -1,5 +1,7 @@
 ## Setup on minikube environment
 
+https://minikube.sigs.k8s.io/docs/start/
+
 - TODO Add notes on how to setup for WSL2
 
 #### Windows Setup
@@ -16,4 +18,14 @@ $oldPath = [Environment]::GetEnvironmentVariable('Path', [EnvironmentVariableTar
 if ($oldPath.Split(';') -inotcontains 'C:\minikube'){ `
   [Environment]::SetEnvironmentVariable('Path', $('{0};C:\minikube' -f $oldPath), [EnvironmentVariableTarget]::Machine) `
 }
+```
+
+#### Start minikube cluster - this command will build you a minikube container in docker engine for windows. 
+```
+minikube start
+```
+
+#### Launch GUI Dashboard
+```
+minikube dashboard
 ```
