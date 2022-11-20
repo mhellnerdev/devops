@@ -1,0 +1,80 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Kubernetes Architecture
+Metadata:
+
+Parameters:
+  KubeVpcCIDR:
+    Description: Please enter the IP range (CIDR notation) for this VPC
+    Type: String
+    Default: 10.0.0.0/16
+
+  KubePublicSubnetCIDR:
+    Description: Please enter the IP range (CIDR notation) for the Public Subnet.
+    Type: String
+    Default: 10.0.0.0/24
+
+  KubePrivateSubnetCIDR:
+    Description: Please enter the IP range (CIDR notation) for the Private Subnet.
+    Type: String
+    Default: 10.0.2.0/24
+
+Mappings:
+  RegionMap:
+    us-east-1:
+      'AMI': 'ami-09d3b3274b6c5d4aa'
+      'PEM': 'mhellnerdev-us-east-kp'
+    us-west-1:
+      'AMI': 'ami-017c001a88dd93847'
+      'PEM': 'mhellnerdev-us-west-kp'
+    us-west-2:
+      'AMI': 'ami-0d593311db5abb72b'
+      'PEM': 'mhellner-us-west2-kp'
+
+Conditions:
+
+Resources:
+  # VPC Description
+  KubeProdVpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref KubeVpcCIDR
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: 'default'
+      Tags:
+        - Key: Name
+          Value: Kube Prod VPC
+        - Key: kubernetes.io/cluster/circlelabs
+          Value: shared
+
+  # Internet Gateway
+  KubeProdIGW:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Kube Prod IGW
+        - Key: kubernetes.io/cluster/circlelabs
+          Value: shared
+
+  KubeProdIGWAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref KubeProdIGW
+      VpcId: !Ref KubeProdVpc
+
+  # Public Subnets
+  KubeProdPublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref KubeProdVpc
+      AvailabilityZone: !Select [0, !GetAZs '']
+      CidrBlock: !Ref KubePublicSubnetCIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: Kube Prod Public Subnet
+        - Key: kubernetes.io/cluster/circlelabs
+          Value: shared
+
+Outputs:
