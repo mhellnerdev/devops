@@ -149,3 +149,53 @@ Resources:
     Properties:
       RouteTableId: !Ref KubeProdPrivateRouteTable
       SubnetId: !Ref KubeProdPrivateSubnet
+
+  # Security Groups
+  KubeProdSSHSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: Kube Prod SSH Security Group
+      GroupDescription: Kube Prod SSH Security Group
+      VpcId: !Ref KubeProdVpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: Kube Prod SSH Security Group
+
+  EC2BastionInstance:
+    Type: AWS::EC2::Instance
+    DeletionPolicy: Delete
+    Properties:
+      ImageId:
+        Fn::FindInMap:
+          - 'RegionMap'
+          - Ref: 'AWS::Region'
+          - 'AMI'
+      InstanceType: 't2.micro'
+      KeyName:
+        Fn::FindInMap:
+          - 'RegionMap'
+          - Ref: 'AWS::Region'
+          - 'PEM'
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: 'true'
+          DeleteOnTermination: 'true'
+          DeviceIndex: '0'
+          GroupSet:
+            - !Ref KubeProdSSHSecurityGroup
+          SubnetId: !Ref KubeProdPublicSubnet
+      Tags:
+        - Key: Name
+          Value: Kube Bastion Host
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          sudo su
+          yum update -y
+          hostnamectl set-hostname kube-bastion
+          curl https://raw.githubusercontent.com/errm/k8s-iam-policies/master/setup.sh -o setup.sh
+          sh -e setup.sh
