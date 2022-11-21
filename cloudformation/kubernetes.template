@@ -1,6 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: Kubernetes Architecture
-Metadata:
 
 Parameters:
   KubeVpcCIDR:
@@ -30,7 +29,6 @@ Mappings:
       'AMI': 'ami-0d593311db5abb72b'
       'PEM': 'mhellner-us-west2-kp'
 
-Conditions:
 
 Resources:
   # VPC Description
@@ -77,4 +75,4 @@ Resources:
         - Key: kubernetes.io/cluster/circlelabs
           Value: shared
 
-Outputs:
+
