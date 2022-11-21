@@ -15,7 +15,7 @@ Parameters:
   KubePrivateSubnetCIDR:
     Description: Please enter the IP range (CIDR notation) for the Private Subnet.
     Type: String
-    Default: 10.0.2.0/24
+    Default: 10.0.1.0/24
 
 Mappings:
   RegionMap:
@@ -61,7 +61,7 @@ Resources:
       InternetGatewayId: !Ref KubeProdIGW
       VpcId: !Ref KubeProdVpc
 
-  # Public Subnets
+  # Public Subnet
   KubeProdPublicSubnet:
     Type: AWS::EC2::Subnet
     Properties:
@@ -75,4 +75,77 @@ Resources:
         - Key: kubernetes.io/cluster/circlelabs
           Value: shared
 
+  # Private Subnet
+  KubeProdPrivateSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref KubeProdVpc
+      AvailabilityZone: !Select [0, !GetAZs '']
+      CidrBlock: !Ref KubePrivateSubnetCIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: Kube Prod Private Subnet
+        - Key: kubernetes.io/cluster/circlelabs
+          Value: shared
 
+  # Elastic IP's
+  KubeProdNgwEip:
+    Type: AWS::EC2::EIP
+    DependsOn: KubeProdIGWAttachment
+    Properties:
+      Domain: vpc
+
+  # NAT Gateways
+  KubeProdNgw:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt KubeProdNgwEip.AllocationId
+      SubnetId: !Ref KubeProdPublicSubnet
+
+  # Public Route Table
+  KubeProdPublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref KubeProdVpc
+      Tags:
+        - Key: Name
+          Value: Kube Prod Public Route
+
+  KubeProdIGWRoute:
+    Type: AWS::EC2::Route
+    DependsOn: KubeProdIGWAttachment
+    Properties:
+      RouteTableId: !Ref KubeProdPublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref KubeProdIGW
+  
+  # Associate Public Route Table
+  KubeProdPublicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref KubeProdPublicRouteTable
+      SubnetId: !Ref KubeProdPublicSubnet
+
+  # Private Route Table
+  KubeProdPrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref KubeProdVpc
+      Tags:
+        - Key: Name
+          Value: Kube Prod Private Route
+
+  # Associate NAT Gateway 
+  KubeProdPrivateNgwRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref KubeProdPrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref KubeProdNgw
+
+  KubeProdPrivateSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref KubeProdPrivateRouteTable
+      SubnetId: !Ref KubeProdPrivateSubnet
