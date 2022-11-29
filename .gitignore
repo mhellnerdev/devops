@@ -68,3 +68,8 @@ operations/variable-scripts/variable.json
 
 ### Vagrant Patch ###
 *.box
+
+# python 
+venv
+/venv
+.venv
