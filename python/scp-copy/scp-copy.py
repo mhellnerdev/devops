@@ -4,9 +4,10 @@ import paramiko
 ssh = paramiko.SSHClient()
 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
+# array of servers to grab crontab
 server_list = [
-    '54.160.164.195',
-    '3.208.25.76'
+    'host-01',
+    'host-02'
 ]
 
 for server in server_list:
@@ -17,10 +18,16 @@ for server in server_list:
     sftp_client = ssh.open_sftp()
 
     sftp_client.get('/etc/crontab', f'crontab_{hostname}')
+    # sftp_client.get('/etc/crontab.daily', f'crontab.daily_{hostname}')
 
     ssh.close()
 
 
 # Bash commands to create cron_goblin user
+# NOTE: Below commands will modify overall security of system allowing password authentication
+# sudo sed -i s/'PasswordAuthentication no'/'PasswordAuthentication yes'/g /etc/ssh/sshd_config
+# sudo systemctl restart sshd
+
+# Below commands create user and set user's password to 'password'
 # sudo adduser cron_goblin
 # echo password | sudo passwd cron_goblin --stdin
