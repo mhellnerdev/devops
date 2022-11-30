@@ -10,18 +10,23 @@ server_list = [
     'host-02'
 ]
 
-for server in server_list:
-    ssh.connect(hostname=server,
-                username='cron_goblin', password='password', port=22)
-    stdin, stdout, stderr = ssh.exec_command('hostname')
-    hostname = stdout.read().decode("utf-8").strip('\n')
-    sftp_client = ssh.open_sftp()
 
-    sftp_client.get('/etc/crontab', f'crontab_{hostname}')
-    # sftp_client.get('/etc/crontab.daily', f'crontab.daily_{hostname}')
+def get_crontab():
+    for server in server_list:
+        ssh.connect(hostname=server,
+                    username='cron_goblin', password='password', port=22)
+        stdin, stdout, stderr = ssh.exec_command('hostname')
+        hostname = stdout.read().decode("utf-8").strip('\n')
+        sftp_client = ssh.open_sftp()
 
-    ssh.close()
+        sftp_client.get('/etc/crontab', f'crontab_{hostname}')
+        # sftp_client.get('/etc/crontab.daily', f'crontab.daily_{hostname}')
 
+        ssh.close()
+
+
+if __name__ == "__main__":
+    get_crontab()
 
 # Bash commands to create cron_goblin user
 # NOTE: Below commands will modify overall security of system allowing password authentication
