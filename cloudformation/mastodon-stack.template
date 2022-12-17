@@ -1,0 +1,2090 @@
+Metadata:
+  OE::Patterns::TemplateVersion: 1.0.0
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Application Config
+        Parameters:
+          - Name
+      - Label:
+          default: ALB Configuration
+        Parameters:
+          - AlbCertificateArn
+          - AlbIngressCidr
+      - Label:
+          default: Assets Bucket Configuration
+        Parameters:
+          - AssetsBucketName
+      - Label:
+          default: DB Secret Configuration
+        Parameters:
+          - DbSecretArn
+      - Label:
+          default: Database Configuration
+        Parameters:
+          - DbBackupRetentionPeriod
+          - DbInstanceClass
+          - DbSnapshotIdentifier
+      - Label:
+          default: DNS Configuration
+        Parameters:
+          - DnsRoute53HostedZoneName
+          - DnsHostname
+      - Label:
+          default: ElastiCache Configuration
+        Parameters:
+          - RedisClusterCacheNodeType
+          - RedisClusterNumCacheNodes
+      - Label:
+          default: OpenSearch Service Configuration
+        Parameters:
+          - OpenSearchServiceEbsVolumeSize
+          - OpenSearchServiceNodeType
+          - OpenSearchServiceCreateServiceLinkedRole
+      - Label:
+          default: Auto Scaling Group Configuration
+        Parameters:
+          - AsgInstanceType
+          - AsgReprovisionString
+          - AsgDesiredCapacity
+          - AsgMaxSize
+          - AsgMinSize
+      - Label:
+          default: Simple Email Service Configuration
+        Parameters:
+          - SesCreateDomainIdentity
+      - Label:
+          default: "VPC: Use Existing"
+        Parameters:
+          - VpcId
+          - VpcPrivateSubnet1Id
+          - VpcPrivateSubnet2Id
+          - VpcPublicSubnet1Id
+          - VpcPublicSubnet2Id
+      - Label:
+          default: "VPC: Create New"
+        Parameters:
+          - VpcCidr
+          - VpcNatGatewayPerSubnet
+          - VpcPrivateSubnet1Cidr
+          - VpcPrivateSubnet2Cidr
+          - VpcPublicSubnet1Cidr
+          - VpcPublicSubnet2Cidr
+    ParameterLabels:
+      Name:
+        default: Mastodon Site Name
+      AlbCertificateArn:
+        default: ALB ACM Certificate ARN
+      AlbIngressCidr:
+        default: ALB Ingress CIDR
+      AssetsBucketName:
+        default: Assets Bucket Name
+      DbSecretArn:
+        default: DB Secret ARN
+      DbBackupRetentionPeriod:
+        default: Database Backup Retention Period
+      DbInstanceClass:
+        default: Database Instance Type
+      DbSnapshotIdentifier:
+        default: Database Snapshot Identifier
+      DnsRoute53HostedZoneName:
+        default: DNS Route 53 Hosted Zone Name
+      DnsHostname:
+        default: DNS Hostname
+      RedisClusterCacheNodeType:
+        default: ElastiCache Instance Type
+      RedisClusterNumCacheNodes:
+        default: ElastiCache Cache Nodes Number
+      OpenSearchServiceEbsVolumeSize:
+        default: OpenSearch Service EBS Volume Size
+      OpenSearchServiceNodeType:
+        default: OpenSearch Service Instance Type
+      OpenSearchServiceCreateServiceLinkedRole:
+        default: OpenSearch Service Create Service Linked Role
+      AsgInstanceType:
+        default: EC2 instance type
+      AsgReprovisionString:
+        default: Auto Scaling Group Reprovision String
+      AsgDesiredCapacity:
+        default: Auto Scaling Group Desired Capacity
+      AsgMaxSize:
+        default: Auto Scaling Group Maximum Size
+      AsgMinSize:
+        default: Auto Scaling Group Minimum Size
+      SesCreateDomainIdentity:
+        default: Create SES Domain Identity
+      VpcCidr:
+        default: VPC IPv4 CIDR
+      VpcId:
+        default: VPC ID
+      VpcNatGatewayPerSubnet:
+        default: Provision NAT Gateways Per Public Subnet (for HA but with higher cost)
+      VpcPrivateSubnet1Cidr:
+        default: Private Subnet 1 IPv4 CIDR
+      VpcPrivateSubnet1Id:
+        default: Private Subnet 1 ID
+      VpcPrivateSubnet2Cidr:
+        default: Private Subnet 2 IPv4 CIDR
+      VpcPrivateSubnet2Id:
+        default: Private Subnet 2 ID
+      VpcPublicSubnet1Id:
+        default: Public Subnet 1 ID
+      VpcPublicSubnet1Cidr:
+        default: Public Subnet 1 IPv4 CIDR
+      VpcPublicSubnet2Id:
+        default: Public Subnet 2 ID
+      VpcPublicSubnet2Cidr:
+        default: Public Subnet 2 IPv4 CIDR
+Parameters:
+  VpcId:
+    Type: String
+    Default: ""
+    Description: "Optional: Specify the VPC ID. If not specified, a VPC will be created."
+  VpcCidr:
+    Type: String
+    Default: 10.0.0.0/16
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(1[6-9]|2[0-8]))$
+    Description: "Optional: VPC IPv4 CIDR block if no VPC provided."
+  VpcNatGatewayPerSubnet:
+    Type: String
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
+    Description: "Optional: Set to 'true' to provision a NAT Gateway in each public subnet for AZ HA."
+  VpcPrivateSubnet1Id:
+    Type: String
+    Default: ""
+    Description: "Optional: Specify Subnet ID for private subnet 1."
+  VpcPrivateSubnet1Cidr:
+    Type: String
+    Default: 10.0.128.0/18
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(1[6-9]|2[0-8]))$
+    Description: "Optional: VPC IPv4 CIDR block of private subnet 1 if no VPC provided."
+  VpcPrivateSubnet2Id:
+    Type: String
+    Default: ""
+    Description: "Optional: Specify Subnet ID for private subnet 2."
+  VpcPrivateSubnet2Cidr:
+    Type: String
+    Default: 10.0.192.0/18
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(1[6-9]|2[0-8]))$
+    Description: "Optional: VPC IPv4 CIDR block of private subnet 2 if no VPC provided."
+  VpcPublicSubnet1Id:
+    Type: String
+    Default: ""
+    Description: "Optional: Specify Subnet ID for public subnet 1."
+  VpcPublicSubnet1Cidr:
+    Type: String
+    Default: 10.0.0.0/18
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(1[6-9]|2[0-8]))$
+    Description: "Optional: VPC IPv4 CIDR block of public subnet 1 if no VPC provided."
+  VpcPublicSubnet2Id:
+    Type: String
+    Default: ""
+    Description: "Optional: Specify Subnet ID for public subnet 2."
+  VpcPublicSubnet2Cidr:
+    Type: String
+    Default: 10.0.64.0/18
+    Description: "Optional: VPC IPv4 CIDR block of public subnet 2 if no VPC provided."
+  Name:
+    Type: String
+    Default: Mastodon
+    Description: The name of this Mastodon site.
+  DnsRoute53HostedZoneName:
+    Type: String
+    Default: ""
+    Description: "Optional: Route 53 Hosted Zone name in which a DNS record will be created by this template. Must already exist and be the domain part of the Hostname parameter, without trailing dot. E.G. 'internal.mycompany.com'"
+  DnsHostname:
+    Type: String
+    Default: ""
+    AllowedPattern: ^(?!.*/).*$
+    ConstraintDescription: Hostname should not have any forward slashes
+    Description: "Optional: The hostname to access the service. E.G. 'app.internal.mycompany.com'"
+  AssetsBucketName:
+    Type: String
+    Default: ""
+    Description: The name of the S3 bucket to store uploaded assets. If not specified, a bucket will be created.
+  SesCreateDomainIdentity:
+    Type: String
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
+    Description: Whether or not to create a SES Identity from the hosted zone.
+  DbSecretArn:
+    Type: String
+    Default: ""
+    Description: "Optional: SecretsManager secret ARN used to store database credentials and other configuration. If not specified, a secret will be created."
+  RedisClusterCacheNodeType:
+    Type: String
+    Default: cache.t3.micro
+    AllowedValues:
+      - cache.m5.large
+      - cache.m5.xlarge
+      - cache.m5.2xlarge
+      - cache.m5.4xlarge
+      - cache.m5.12xlarge
+      - cache.m5.24xlarge
+      - cache.m4.large
+      - cache.m4.xlarge
+      - cache.m4.2xlarge
+      - cache.m4.4xlarge
+      - cache.m4.10xlarge
+      - cache.t3.micro
+      - cache.t3.small
+      - cache.t3.medium
+    Description: "Required: Instance type for the cluster nodes."
+  RedisClusterNumCacheNodes:
+    Type: Number
+    Default: 1
+    Description: "Required: The number of cache nodes in the cluster."
+    MaxValue: 20
+    MinValue: 1
+  OpenSearchServiceEbsVolumeSize:
+    Type: Number
+    Default: 10
+    Description: "Required: The size of the EBS volume for the OpenSearch node."
+  OpenSearchServiceNodeType:
+    Type: String
+    Default: t3.small.search
+    AllowedValues:
+      - c5.large.search
+      - c5.4xlarge.search
+      - c5.9xlarge.search
+      - c5.xlarge.search
+      - c5.18xlarge.search
+      - c5.2xlarge.search
+      - c6g.12xlarge.search
+      - c6g.xlarge.search
+      - c6g.4xlarge.search
+      - c6g.8xlarge.search
+      - c6g.large.search
+      - c6g.2xlarge.search
+      - i3.4xlarge.search
+      - i3.16xlarge.search
+      - i3.xlarge.search
+      - i3.large.search
+      - i3.2xlarge.search
+      - i3.8xlarge.search
+      - m5.large.search
+      - m5.12xlarge.search
+      - m5.xlarge.search
+      - m5.2xlarge.search
+      - m5.4xlarge.search
+      - m6g.2xlarge.search
+      - m6g.4xlarge.search
+      - m6g.12xlarge.search
+      - m6g.xlarge.search
+      - m6g.large.search
+      - m6g.8xlarge.search
+      - r5.large.search
+      - r5.2xlarge.search
+      - r5.12xlarge.search
+      - r5.4xlarge.search
+      - r5.xlarge.search
+      - r6g.8xlarge.search
+      - r6g.2xlarge.search
+      - r6g.xlarge.search
+      - r6g.12xlarge.search
+      - r6g.large.search
+      - r6g.4xlarge.search
+      - r6gd.16xlarge.search
+      - r6gd.4xlarge.search
+      - r6gd.xlarge.search
+      - r6gd.8xlarge.search
+      - r6gd.large.search
+      - r6gd.12xlarge.search
+      - r6gd.2xlarge.search
+      - t3.medium.search
+      - t3.small.search
+    Description: "Required: Instance type for the OpenSearch Service nodes."
+  OpenSearchServiceCreateServiceLinkedRole:
+    Type: String
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
+    Description: Whether or not to create a Service Linked Role for OpenSearch VPC access.
+  AsgInstanceType:
+    Type: String
+    Default: t3.xlarge
+    AllowedValues:
+      - c5.large
+      - c5.xlarge
+      - c5.2xlarge
+      - c5.4xlarge
+      - c5.9xlarge
+      - c5.12xlarge
+      - c5.18xlarge
+      - c5.24xlarge
+      - c5.metal
+      - c5d.large
+      - c5d.xlarge
+      - c5d.2xlarge
+      - c5d.4xlarge
+      - c5d.9xlarge
+      - c5d.12xlarge
+      - c5d.18xlarge
+      - c5d.24xlarge
+      - m5.large
+      - m5.xlarge
+      - m5.2xlarge
+      - m5.4xlarge
+      - m5.8xlarge
+      - m5.12xlarge
+      - m5.16xlarge
+      - m5.24xlarge
+      - m5.metal
+      - m5d.large
+      - m5d.xlarge
+      - m5d.2xlarge
+      - m5d.4xlarge
+      - m5d.8xlarge
+      - m5d.12xlarge
+      - m5d.16xlarge
+      - m5d.24xlarge
+      - m5d.metal
+      - r5.large
+      - r5.xlarge
+      - r5.2xlarge
+      - r5.4xlarge
+      - r5.8xlarge
+      - r5.12xlarge
+      - r5.16xlarge
+      - r5.24xlarge
+      - r5.metal
+      - r5d.large
+      - r5d.xlarge
+      - r5d.2xlarge
+      - r5d.4xlarge
+      - r5d.8xlarge
+      - r5d.12xlarge
+      - r5d.16xlarge
+      - r5d.24xlarge
+      - r5d.metal
+      - t3.nano
+      - t3.micro
+      - t3.small
+      - t3.medium
+      - t3.large
+      - t3.xlarge
+      - t3.2xlarge
+    Description: "Required: The EC2 instance type for the application Auto Scaling Group."
+  AsgReprovisionString:
+    Type: String
+    Default: ""
+    Description: "Optional: Changes to this parameter will force instance reprovision on the next CloudFormation update."
+  AsgDesiredCapacity:
+    Type: Number
+    Default: 1
+    Description: "Required: The desired capacity of the Auto Scaling Group."
+    MinValue: 0
+  AsgMaxSize:
+    Type: Number
+    Default: 2
+    Description: "Required: The maximum size of the Auto Scaling Group."
+    MinValue: 0
+  AsgMinSize:
+    Type: Number
+    Default: 1
+    Description: "Required: The minimum size of the Auto Scaling Group."
+    MinValue: 0
+  AlbCertificateArn:
+    Type: String
+    Description: "Required: Specify the ARN of a ACM Certificate to configure HTTPS."
+  AlbIngressCidr:
+    Type: String
+    AllowedPattern: ^((\d{1,3})\.){3}\d{1,3}/\d{1,2}$
+    Description: "Required: VPC IPv4 CIDR block to restrict access to ALB. Set to '0.0.0.0/0' to allow all access, or set to 'X.X.X.X/32' to restrict to one IP (replace Xs with your IP), or set to another CIDR range."
+  DbBackupRetentionPeriod:
+    Type: Number
+    Default: "7"
+    Description: "Required: The number of days to retain automated db backups."
+    MaxValue: 35
+    MinValue: 1
+  DbInstanceClass:
+    Type: String
+    Default: db.r5.large
+    AllowedValues:
+      - db.r5.large
+      - db.r5.xlarge
+      - db.r5.2xlarge
+      - db.r5.4xlarge
+      - db.r5.8xlarge
+      - db.r5.12xlarge
+      - db.r4.large
+      - db.r4.xlarge
+      - db.r4.2xlarge
+      - db.r4.4xlarge
+      - db.r4.8xlarge
+      - db.r4.16xlarge
+      - db.t3.micro
+      - db.t3.small
+      - db.t3.medium
+      - db.t3.large
+      - db.t3.xlarge
+      - db.t3.2xlarge
+      - db.t2.small
+      - db.t2.medium
+    Description: "Required: The class profile for memory and compute capacity for the database instance."
+  DbSnapshotIdentifier:
+    Type: String
+    Default: ""
+    Description: "Optional: RDS snapshot ARN from which to restore. If specified, manually edit the secret values to specify the snapshot credentials for the application. WARNING: Changing this value will re-provision the database."
+Conditions:
+  VpcNotGiven:
+    Fn::Equals:
+      - Ref: VpcId
+      - ""
+  VpcNotGivenAndNatGatewayPerSubnet:
+    Fn::And:
+      - Fn::Equals:
+          - Ref: VpcId
+          - ""
+      - Fn::Equals:
+          - Ref: VpcNatGatewayPerSubnet
+          - "true"
+  DnsRoute53HostedZoneNameExists:
+    Fn::Not:
+      - Fn::Equals:
+          - Ref: DnsRoute53HostedZoneName
+          - ""
+  DnsHostnameExists:
+    Fn::Not:
+      - Fn::Equals:
+          - Ref: DnsHostname
+          - ""
+  AssetsBucketNameNotExists:
+    Fn::Equals:
+      - Ref: AssetsBucketName
+      - ""
+  SesCreateDomainIdentityCondition:
+    Fn::Equals:
+      - Ref: SesCreateDomainIdentity
+      - "true"
+  DbSecretArnExistsCondition:
+    Fn::Not:
+      - Fn::Equals:
+          - Ref: DbSecretArn
+          - ""
+  DbSecretArnNotExistsCondition:
+    Fn::Equals:
+      - Ref: DbSecretArn
+      - ""
+  OpenSearchServiceCreateServiceLinkedRoleCondition:
+    Fn::Equals:
+      - Ref: OpenSearchServiceCreateServiceLinkedRole
+      - "true"
+  DbSnapshotIdentifierExistsCondition:
+    Fn::Not:
+      - Fn::Equals:
+          - Ref: DbSnapshotIdentifier
+          - ""
+Resources:
+  Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock:
+        Ref: VpcCidr
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Join:
+              - ""
+              - - Ref: AWS::StackName
+                - /Vpc
+    Condition: VpcNotGiven
+  VpcInternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Join:
+              - ""
+              - - Ref: AWS::StackName
+                - /Vpc
+    Condition: VpcNotGiven
+  VpcIGWAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId:
+        Ref: Vpc
+      InternetGatewayId:
+        Ref: VpcInternetGateway
+    Condition: VpcNotGiven
+  VpcPublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: Vpc
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Join:
+              - ""
+              - - Ref: AWS::StackName
+                - /Vpc/PublicRouteTable
+    Condition: VpcNotGiven
+  VpcPublicDefaultRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: VpcPublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: VpcInternetGateway
+    Condition: VpcNotGiven
+  VpcPublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: Vpc
+      AvailabilityZone:
+        Fn::Select:
+          - 0
+          - Fn::GetAZs: ""
+      CidrBlock:
+        Ref: VpcPublicSubnet1Cidr
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Join:
+              - ""
+              - - Ref: AWS::StackName
+                - /Vpc/PublicSubnet1
+    Condition: VpcNotGiven
+  VpcPublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: VpcPublicRouteTable
+      SubnetId:
+        Ref: VpcPublicSubnet1
+    Condition: VpcNotGiven
+  VpcPublicSubnet1EIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+    Condition: VpcNotGiven
+  VpcPublicSubnet1NATGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      SubnetId:
+        Ref: VpcPublicSubnet1
+      AllocationId:
+        Fn::GetAtt:
+          - VpcPublicSubnet1EIP
+          - AllocationId
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Join:
+              - ""
+              - - Ref: AWS::StackName
+                - /Vpc/PublicSubnet1
+    Condition: VpcNotGiven
+  VpcPublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: Vpc
+      AvailabilityZone:
+        Fn::Select:
+          - 1
+          - Fn::GetAZs: ""
+      CidrBlock:
+        Ref: VpcPublicSubnet2Cidr
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Join:
+              - ""
+              - - Ref: AWS::StackName
+                - /Vpc/PublicSubnet2
+    Condition: VpcNotGiven
+  VpcPublicSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: VpcPublicRouteTable
+      SubnetId:
+        Ref: VpcPublicSubnet2
+    Condition: VpcNotGiven
+  VpcPublicSubnet2EIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+    Condition: VpcNotGivenAndNatGatewayPerSubnet
+  VpcPublicSubnet2NATGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      SubnetId:
+        Ref: VpcPublicSubnet2
+      AllocationId:
+        Fn::GetAtt:
+          - VpcPublicSubnet2EIP
+          - AllocationId
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Join:
+              - ""
+              - - Ref: AWS::StackName
+                - /Vpc/PublicSubnet2
+    Condition: VpcNotGivenAndNatGatewayPerSubnet
+  VpcPrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: Vpc
+      AvailabilityZone:
+        Fn::Select:
+          - 0
+          - Fn::GetAZs: ""
+      CidrBlock:
+        Ref: VpcPrivateSubnet1Cidr
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Join:
+              - ""
+              - - Ref: AWS::StackName
+                - /Vpc/PrivateSubnet1
+    Condition: VpcNotGiven
+  VpcPrivateSubnet1RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: Vpc
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Join:
+              - ""
+              - - Ref: AWS::StackName
+                - /Vpc/PrivateSubnet1
+    Condition: VpcNotGiven
+  VpcPrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: VpcPrivateSubnet1RouteTable
+      SubnetId:
+        Ref: VpcPrivateSubnet1
+    Condition: VpcNotGiven
+  VpcPrivateSubnet1DefaultRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: VpcPrivateSubnet1RouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: VpcPublicSubnet1NATGateway
+    Condition: VpcNotGiven
+  VpcPrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: Vpc
+      AvailabilityZone:
+        Fn::Select:
+          - 1
+          - Fn::GetAZs: ""
+      CidrBlock:
+        Ref: VpcPrivateSubnet2Cidr
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Join:
+              - ""
+              - - Ref: AWS::StackName
+                - /Vpc/PrivateSubnet2
+    Condition: VpcNotGiven
+  VpcPrivateSubnet2RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: Vpc
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Join:
+              - ""
+              - - Ref: AWS::StackName
+                - /Vpc/PrivateSubnet2
+    Condition: VpcNotGiven
+  VpcPrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: VpcPrivateSubnet2RouteTable
+      SubnetId:
+        Ref: VpcPrivateSubnet2
+    Condition: VpcNotGiven
+  VpcPrivateSubnet2DefaultRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: VpcPrivateSubnet2RouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Fn::If:
+          - VpcNotGivenAndNatGatewayPerSubnet
+          - Ref: VpcPublicSubnet2NATGateway
+          - Ref: VpcPublicSubnet1NATGateway
+    Condition: VpcNotGiven
+  DnsRecordSet:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      Name:
+        Ref: DnsHostname
+      Type: CNAME
+      HostedZoneName:
+        Fn::Join:
+          - ""
+          - - Ref: DnsRoute53HostedZoneName
+            - "."
+      ResourceRecords:
+        - Fn::GetAtt:
+            - Alb
+            - DNSName
+      TTL: 60
+    Condition: DnsRoute53HostedZoneNameExists
+  AssetsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: Private
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Condition: AssetsBucketNameNotExists
+  SesDomainIdentity:
+    Type: AWS::SES::EmailIdentity
+    Properties:
+      EmailIdentity:
+        Ref: DnsRoute53HostedZoneName
+    Condition: SesCreateDomainIdentityCondition
+  SesDkimDnsRecordSet1:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      Name:
+        Fn::GetAtt:
+          - SesDomainIdentity
+          - DkimDNSTokenName1
+      Type: CNAME
+      HostedZoneName:
+        Fn::Join:
+          - ""
+          - - Ref: DnsRoute53HostedZoneName
+            - "."
+      ResourceRecords:
+        - Fn::GetAtt:
+            - SesDomainIdentity
+            - DkimDNSTokenValue1
+      TTL: "300"
+    Condition: SesCreateDomainIdentityCondition
+  SesDkimDnsRecordSet2:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      Name:
+        Fn::GetAtt:
+          - SesDomainIdentity
+          - DkimDNSTokenName2
+      Type: CNAME
+      HostedZoneName:
+        Fn::Join:
+          - ""
+          - - Ref: DnsRoute53HostedZoneName
+            - "."
+      ResourceRecords:
+        - Fn::GetAtt:
+            - SesDomainIdentity
+            - DkimDNSTokenValue2
+      TTL: "300"
+    Condition: SesCreateDomainIdentityCondition
+  SesDkimDnsRecordSet3:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      Name:
+        Fn::GetAtt:
+          - SesDomainIdentity
+          - DkimDNSTokenName3
+      Type: CNAME
+      HostedZoneName:
+        Fn::Join:
+          - ""
+          - - Ref: DnsRoute53HostedZoneName
+            - "."
+      ResourceRecords:
+        - Fn::GetAtt:
+            - SesDomainIdentity
+            - DkimDNSTokenValue3
+      TTL: "300"
+    Condition: SesCreateDomainIdentityCondition
+  InstanceUser:
+    Type: AWS::IAM::User
+    Properties:
+      Path: /
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action:
+                  - ses:SendEmail
+                  - ses:SendRawEmail
+                Effect: Allow
+                Resource: "*"
+            Version: "2012-10-17"
+          PolicyName: AllowSendEmail
+        - PolicyDocument:
+            Statement:
+              - Action: s3:*
+                Effect: Allow
+                Resource:
+                  Fn::Join:
+                    - ""
+                    - - "arn:"
+                      - Ref: AWS::Partition
+                      - ":s3:::"
+                      - Fn::If:
+                          - AssetsBucketNameNotExists
+                          - Ref: AssetsBucket
+                          - Ref: AssetsBucketName
+                      - /*/*
+              - Action: s3:ListBucket
+                Effect: Allow
+                Resource:
+                  Fn::Join:
+                    - ""
+                    - - "arn:"
+                      - Ref: AWS::Partition
+                      - ":s3:::"
+                      - Fn::If:
+                          - AssetsBucketNameNotExists
+                          - Ref: AssetsBucket
+                          - Ref: AssetsBucketName
+                      - /*
+            Version: "2012-10-17"
+          PolicyName: AllowAssetsBucket
+      UserName:
+        Fn::Join:
+          - ""
+          - - Ref: AWS::Region
+            - "-"
+            - Ref: AWS::StackName
+            - -instance
+  InstanceUserAccessKey:
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName:
+        Fn::Join:
+          - ""
+          - - Ref: AWS::Region
+            - "-"
+            - Ref: AWS::StackName
+            - -instance
+    DependsOn:
+      - InstanceUser
+  GenerateSMTPPasswordLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+  GenerateSMTPPasswordLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: |
+          import base64
+          import boto3
+          import cfnresponse
+          import hashlib
+          import hmac
+          import json
+          import traceback
+          from botocore.exceptions import ClientError
+
+          def sign(key, msg):
+              return hmac.new(key, msg.encode("utf-8"), hashlib.sha256).digest()
+
+          def handler(event, context):
+              try:
+                  if event["RequestType"] == "Delete":
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+                      return
+                  secret_access_key = event["ResourceProperties"]["secret_access_key"]
+                  aws_region        = event["ResourceProperties"]["aws_region"]
+                  stack_name        = event["ResourceProperties"]["stack_name"]
+                  access_key_id     = event["ResourceProperties"]["access_key_id"]
+
+                  date     = "11111111"
+                  service  = "ses"
+                  message  = "SendRawEmail"
+                  terminal = "aws4_request"
+                  version  = 0x04
+
+                  signature = sign(("AWS4" + secret_access_key).encode("utf-8"), date)
+                  signature = sign(signature, aws_region)
+                  signature = sign(signature, service)
+                  signature = sign(signature, terminal)
+                  signature = sign(signature, message)
+                  signature_and_version = bytes([version]) + signature
+                  smtp_password = base64.b64encode(signature_and_version).decode("utf-8")
+
+                  secret = { "access_key_id": access_key_id, "smtp_password": smtp_password, "secret_access_key": secret_access_key }
+                  client = boto3.client("secretsmanager")
+                  responseData = {}
+                  try:
+                      response = client.create_secret(
+                          Name=f"{stack_name}/instance/credentials",
+                          SecretString=json.dumps(secret)
+                      )        
+                      responseData = {"arn": response["ARN"]}
+                  except ClientError as e:
+                      if e.response["Error"]["Code"] == "ResourceExistsException":
+                          response = client.list_secrets(
+                              Filters=[{"Key": "name", "Values": [f"{stack_name}/instance/credentials"]}]
+                          )
+                          arn = response["SecretList"][0]["ARN"]
+                          response = client.get_secret_value(
+                              SecretId=arn
+                          )
+                          current_secret = json.loads(response["SecretString"])
+                          if ('access_key_id'     not in current_secret or current_secret['access_key_id']     != secret['access_key_id'] or
+                              'smtp_password'     not in current_secret or current_secret['smtp_password']     != secret['smtp_password'] or
+                              'secret_access_key' not in current_secret or current_secret['secret_access_key'] != secret['secret_access_key']):
+
+                              current_secret['access_key_id']     = secret['access_key_id']
+                              current_secret['smtp_password']     = secret['smtp_password']
+                              current_secret['secret_access_key'] = secret['secret_access_key']
+
+                              client.update_secret(
+                                  SecretId=arn,
+                                  SecretString=json.dumps(current_secret)
+                              )
+                          responseData = {"arn": arn}
+                      else:
+                          cfnresponse.send(event, context, cfnresponse.FAILED, {})
+                          traceback.print_exc()
+                          return
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData)
+              except Exception:
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {})
+                  traceback.print_exc()
+      Role:
+        Fn::GetAtt:
+          - GenerateSMTPPasswordLambdaRole
+          - Arn
+      Handler: index.handler
+      Runtime: python3.8
+    DependsOn:
+      - GenerateSMTPPasswordLambdaRole
+  InstanceUserCreateSecretPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action: secretsmanager:ListSecrets
+            Effect: Allow
+            Resource: "*"
+          - Action: secretsmanager:CreateSecret
+            Condition:
+              StringEquals:
+                secretsmanager:Name:
+                  - Fn::Join:
+                      - ""
+                      - - Ref: AWS::StackName
+                        - /instance/credentials
+            Effect: Allow
+            Resource: "*"
+          - Action:
+              - secretsmanager:GetSecretValue
+              - secretsmanager:UpdateSecret
+            Effect: Allow
+            Resource:
+              Fn::Join:
+                - ""
+                - - "arn:"
+                  - Ref: AWS::Partition
+                  - ":secretsmanager:"
+                  - Ref: AWS::Region
+                  - ":"
+                  - Ref: AWS::AccountId
+                  - ":secret:"
+                  - Ref: AWS::StackName
+                  - /instance/credentials-*
+        Version: "2012-10-17"
+      PolicyName: InstanceUserCreateSecretPolicy
+      Roles:
+        - Ref: GenerateSMTPPasswordLambdaRole
+  GenerateSMTPPasswordCustomResource:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken:
+        Fn::GetAtt:
+          - GenerateSMTPPasswordLambda
+          - Arn
+      access_key_id:
+        Ref: InstanceUserAccessKey
+      aws_region:
+        Ref: AWS::Region
+      secret_access_key:
+        Fn::GetAtt:
+          - InstanceUserAccessKey
+          - SecretAccessKey
+      stack_name:
+        Ref: AWS::StackName
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+  DbSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      GenerateSecretString:
+        ExcludeCharacters: "\"@/\\\"'$,[]*?{}~\\#%<>|^"
+        ExcludePunctuation: true
+        GenerateStringKey: password
+        SecretStringTemplate: '{"username": "dbadmin"}'
+      Name:
+        Fn::Join:
+          - ""
+          - - Ref: AWS::StackName
+            - /db/secret
+    Condition: DbSecretArnNotExistsCondition
+  DbSecretArnParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value:
+        Fn::If:
+          - DbSecretArnExistsCondition
+          - Ref: DbSecretArn
+          - Ref: DbSecret
+      Name:
+        Fn::Join:
+          - ""
+          - - Ref: AWS::StackName
+            - -db-secret-arn
+  RedisSg:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: ElastiCache SG
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          Description: all IPv4 egress traffic allowed
+          IpProtocol: "-1"
+      VpcId:
+        Fn::If:
+          - VpcNotGiven
+          - Ref: Vpc
+          - Ref: VpcId
+  RedisSubnetGroup:
+    Type: AWS::ElastiCache::SubnetGroup
+    Properties:
+      Description: ElastiCache subnet group.
+      SubnetIds:
+        Fn::If:
+          - VpcNotGiven
+          - - Ref: VpcPrivateSubnet1
+            - Ref: VpcPrivateSubnet2
+          - - Ref: VpcPrivateSubnet1Id
+            - Ref: VpcPrivateSubnet2Id
+  RedisCluster:
+    Type: AWS::ElastiCache::CacheCluster
+    Properties:
+      CacheNodeType:
+        Ref: RedisClusterCacheNodeType
+      Engine: redis
+      NumCacheNodes:
+        Ref: RedisClusterNumCacheNodes
+      AZMode:
+        Ref: AWS::NoValue
+      CacheSubnetGroupName:
+        Ref: RedisSubnetGroup
+      EngineVersion: "6.2"
+      VpcSecurityGroupIds:
+        - Ref: RedisSg
+  RedisSgIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      IpProtocol: tcp
+      FromPort: 6379
+      GroupId:
+        Ref: RedisSg
+      SourceSecurityGroupId:
+        Ref: AsgSg
+      ToPort: 6379
+  OpenSearchServiceKey:
+    Type: AWS::KMS::Key
+    Properties:
+      KeyPolicy:
+        Statement:
+          - Action: kms:*
+            Effect: Allow
+            Principal:
+              AWS:
+                Fn::Join:
+                  - ""
+                  - - "arn:"
+                    - Ref: AWS::Partition
+                    - ":iam::"
+                    - Ref: AWS::AccountId
+                    - :root
+            Resource: "*"
+        Version: "2012-10-17"
+      Description: Encrypt OpenSearch
+      Enabled: true
+      EnableKeyRotation: true
+  OpenSearchServiceSg:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Open Search Service SG
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          Description: all IPv4 egress traffic allowed
+          IpProtocol: "-1"
+      VpcId:
+        Fn::If:
+          - VpcNotGiven
+          - Ref: Vpc
+          - Ref: VpcId
+  OpenSearchServiceServiceLinkedRole:
+    Type: AWS::IAM::ServiceLinkedRole
+    Properties:
+      AWSServiceName: opensearchservice.amazonaws.com
+    Condition: OpenSearchServiceCreateServiceLinkedRoleCondition
+  OpenSearchServiceWaitConditionHandle:
+    Type: AWS::CloudFormation::WaitConditionHandle
+    Metadata:
+      ServiceLinkedRoleAvailable:
+        Fn::If:
+          - OpenSearchServiceCreateServiceLinkedRoleCondition
+          - Ref: OpenSearchServiceServiceLinkedRole
+          - Ref: AWS::NoValue
+  OpenSearchServiceDomain:
+    Type: AWS::OpenSearchService::Domain
+    Properties:
+      AccessPolicies:
+        Statement:
+          - Action: es:*
+            Effect: Allow
+            Principal:
+              AWS: "*"
+            Resource:
+              Fn::Join:
+                - ""
+                - - "arn:"
+                  - Ref: AWS::Partition
+                  - ":es:"
+                  - Ref: AWS::Region
+                  - ":"
+                  - Ref: AWS::AccountId
+                  - :domain/*
+        Version: "2012-10-17"
+      ClusterConfig:
+        DedicatedMasterEnabled: false
+        InstanceCount: 1
+        InstanceType:
+          Ref: OpenSearchServiceNodeType
+        ZoneAwarenessEnabled: false
+      EBSOptions:
+        EBSEnabled: true
+        VolumeSize: 10
+        VolumeType: gp3
+      EncryptionAtRestOptions:
+        Enabled: true
+        KmsKeyId:
+          Fn::GetAtt:
+            - OpenSearchServiceKey
+            - KeyId
+      EngineVersion: Elasticsearch_7.10
+      NodeToNodeEncryptionOptions:
+        Enabled: true
+      VPCOptions:
+        SecurityGroupIds:
+          - Ref: OpenSearchServiceSg
+        SubnetIds:
+          - Fn::If:
+              - VpcNotGiven
+              - Ref: VpcPrivateSubnet1
+              - Ref: VpcPrivateSubnet1Id
+    DependsOn:
+      - OpenSearchServiceWaitConditionHandle
+  OpenSearchServiceSgIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      IpProtocol: tcp
+      FromPort: 80
+      GroupId:
+        Ref: OpenSearchServiceSg
+      SourceSecurityGroupId:
+        Ref: AsgSg
+      ToPort: 80
+  AsgAppLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 731
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+  AsgSystemLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 731
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+  AsgInstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action:
+                  - ec2:DescribeVolumes
+                  - ec2:DescribeTags
+                  - cloudwatch:GetMetricStatistics
+                  - cloudwatch:ListMetrics
+                  - cloudwatch:PutMetricData
+                Effect: Allow
+                Resource: "*"
+            Version: "2012-10-17"
+          PolicyName: AllowStreamMetricsToCloudWatch
+        - PolicyDocument:
+            Statement:
+              - Action: autoscaling:Describe*
+                Effect: Allow
+                Resource: "*"
+            Version: "2012-10-17"
+          PolicyName: AllowDescribeAutoScaling
+        - PolicyDocument:
+            Statement:
+              - Action:
+                  - logs:CreateLogStream
+                  - logs:DescribeLogStreams
+                  - logs:PutLogEvents
+                Effect: Allow
+                Resource:
+                  - Fn::GetAtt:
+                      - AsgSystemLogGroup
+                      - Arn
+                  - Fn::GetAtt:
+                      - AsgAppLogGroup
+                      - Arn
+            Version: "2012-10-17"
+          PolicyName: AllowStreamLogsToCloudWatch
+        - PolicyDocument:
+            Statement:
+              - Action: secretsmanager:ListSecrets
+                Effect: Allow
+                Resource: "*"
+              - Action: secretsmanager:GetSecretValue
+                Effect: Allow
+                Resource:
+                  - Fn::If:
+                      - DbSecretArnExistsCondition
+                      - Ref: DbSecretArn
+                      - Ref: DbSecret
+                  - Fn::GetAtt:
+                      - GenerateSMTPPasswordCustomResource
+                      - arn
+            Version: "2012-10-17"
+          PolicyName: AllowReadFromSecretsManager
+        - PolicyDocument:
+            Statement:
+              - Action: secretsmanager:UpdateSecret
+                Effect: Allow
+                Resource:
+                  Fn::Join:
+                    - ""
+                    - - "arn:"
+                      - Ref: AWS::Partition
+                      - ":secretsmanager:"
+                      - Ref: AWS::Region
+                      - ":"
+                      - Ref: AWS::AccountId
+                      - ":secret:"
+                      - Ref: AWS::StackName
+                      - /instance/credentials-*
+            Version: "2012-10-17"
+          PolicyName: AllowUpdateInstanceSecret
+  AsgSg:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Asg security group
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          Description: all IPv4 egress traffic allowed
+          IpProtocol: "-1"
+      VpcId:
+        Fn::If:
+          - VpcNotGiven
+          - Ref: Vpc
+          - Ref: VpcId
+  AsgInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - Ref: AsgInstanceRole
+  AsgLaunchConfig:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      ImageId:
+        Fn::FindInMap:
+          - AWSAMIRegionMap
+          - Ref: AWS::Region
+          - AMI
+      InstanceType:
+        Ref: AsgInstanceType
+      IamInstanceProfile:
+        Ref: AsgInstanceProfile
+      SecurityGroups:
+        - Ref: AsgSg
+      UserData:
+        Fn::Base64:
+          Fn::Sub:
+            - |-
+              #!/bin/bash
+
+              # aws cloudwatch
+              cat <<EOF > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+              {
+                "agent": {
+                  "metrics_collection_interval": 60,
+                  "run_as_user": "root",
+                  "logfile": "/opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log"
+                },
+                "metrics": {
+                  "metrics_collected": {
+                    "collectd": {
+                      "metrics_aggregation_interval": 60
+                    },
+                    "disk": {
+                      "measurement": ["used_percent"],
+                      "metrics_collection_interval": 60,
+                      "resources": ["*"]
+                    },
+                    "mem": {
+                      "measurement": ["mem_used_percent"],
+                      "metrics_collection_interval": 60
+                    }
+                  },
+                  "append_dimensions": {
+                    "ImageId": "\${!aws:ImageId}",
+                    "InstanceId": "\${!aws:InstanceId}",
+                    "InstanceType": "\${!aws:InstanceType}",
+                    "AutoScalingGroupName": "\${!aws:AutoScalingGroupName}"
+                  }
+                },
+                "logs": {
+                  "logs_collected": {
+                    "files": {
+                      "collect_list": [
+                        {
+                          "file_path": "/opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log",
+                          "log_group_name": "${AsgSystemLogGroup}",
+                          "log_stream_name": "{instance_id}-/opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log",
+                          "timezone": "UTC"
+                        },
+                        {
+                          "file_path": "/var/log/dpkg.log",
+                          "log_group_name": "${AsgSystemLogGroup}",
+                          "log_stream_name": "{instance_id}-/var/log/dpkg.log",
+                          "timezone": "UTC"
+                        },
+                        {
+                          "file_path": "/var/log/apt/history.log",
+                          "log_group_name": "${AsgSystemLogGroup}",
+                          "log_stream_name": "{instance_id}-/var/log/apt/history.log",
+                          "timezone": "UTC"
+                        },
+                        {
+                          "file_path": "/var/log/cloud-init.log",
+                          "log_group_name": "${AsgSystemLogGroup}",
+                          "log_stream_name": "{instance_id}-/var/log/cloud-init.log",
+                          "timezone": "UTC"
+                        },
+                        {
+                          "file_path": "/var/log/cloud-init-output.log",
+                          "log_group_name": "${AsgSystemLogGroup}",
+                          "log_stream_name": "{instance_id}-/var/log/cloud-init-output.log",
+                          "timezone": "UTC"
+                        },
+                        {
+                          "file_path": "/var/log/auth.log",
+                          "log_group_name": "${AsgSystemLogGroup}",
+                          "log_stream_name": "{instance_id}-/var/log/auth.log",
+                          "timezone": "UTC"
+                        },
+                        {
+                          "file_path": "/var/log/syslog",
+                          "log_group_name": "${AsgSystemLogGroup}",
+                          "log_stream_name": "{instance_id}-/var/log/syslog",
+                          "timezone": "UTC"
+                        },
+                        {
+                          "file_path": "/var/log/amazon/ssm/amazon-ssm-agent.log",
+                          "log_group_name": "${AsgSystemLogGroup}",
+                          "log_stream_name": "{instance_id}-/var/log/amazon/ssm/amazon-ssm-agent.log",
+                          "timezone": "UTC"
+                        },
+                        {
+                          "file_path": "/var/log/amazon/ssm/errors.log",
+                          "log_group_name": "${AsgSystemLogGroup}",
+                          "log_stream_name": "{instance_id}-/var/log/amazon/ssm/errors.log",
+                          "timezone": "UTC"
+                        },
+                        {
+                          "file_path": "/var/log/nginx/access.log",
+                          "log_group_name": "${AsgAppLogGroup}",
+                          "log_stream_name": "{instance_id}-/var/log/nginx/access.log",
+                          "timezone": "UTC"
+                        },
+                        {
+                          "file_path": "/var/log/nginx/error.log",
+                          "log_group_name": "${AsgAppLogGroup}",
+                          "log_stream_name": "{instance_id}-/var/log/nginx/error.log",
+                          "timezone": "UTC"
+                        },
+                        {
+                          "file_path": "/var/log/mastodon-web.log",
+                          "log_group_name": "${AsgAppLogGroup}",
+                          "log_stream_name": "{instance_id}-/var/log/mastodon-web.log",
+                          "timezone": "UTC"
+                        },
+                        {
+                          "file_path": "/var/log/mastodon-sidekiq.log",
+                          "log_group_name": "${AsgAppLogGroup}",
+                          "log_stream_name": "{instance_id}-/var/log/mastodon-sidekiq.log",
+                          "timezone": "UTC"
+                        },
+                        {
+                          "file_path": "/var/log/mastodon-streaming.log",
+                          "log_group_name": "${AsgAppLogGroup}",
+                          "log_stream_name": "{instance_id}-/var/log/mastodon-streaming.log",
+                          "timezone": "UTC"
+                        }
+                      ]
+                    }
+                  },
+                  "log_stream_name": "{instance_id}"
+                }
+              }
+              EOF
+              systemctl enable amazon-cloudwatch-agent
+              systemctl start amazon-cloudwatch-agent
+
+              openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
+                -keyout /etc/ssl/private/nginx-selfsigned.key \
+                -out /etc/ssl/certs/nginx-selfsigned.crt \
+                -subj '/CN=localhost'
+
+              mkdir -p /opt/oe/patterns
+
+              # secretsmanager
+              SECRET_ARN="${DbSecretArn}"
+              echo $SECRET_ARN > /opt/oe/patterns/secret-arn.txt
+              SECRET_NAME=$(aws secretsmanager list-secrets --query "SecretList[?ARN=='$SECRET_ARN'].Name" --output text)
+              echo $SECRET_NAME > /opt/oe/patterns/secret-name.txt
+
+              aws ssm get-parameter \
+                  --name "/aws/reference/secretsmanager/$SECRET_NAME" \
+                  --with-decryption \
+                  --query Parameter.Value \
+              | jq -r . > /opt/oe/patterns/secret.json
+
+              DB_PASSWORD=$(cat /opt/oe/patterns/secret.json | jq -r .password)
+              DB_USERNAME=$(cat /opt/oe/patterns/secret.json | jq -r .username)
+
+              /root/check-secrets.py ${AWS::Region} ${InstanceSecretName}
+
+              aws ssm get-parameter \
+                  --name "/aws/reference/secretsmanager/${InstanceSecretName}" \
+                  --with-decryption \
+                  --query Parameter.Value \
+              | jq -r . > /opt/oe/patterns/instance.json
+
+              ACCESS_KEY_ID=$(cat /opt/oe/patterns/instance.json | jq -r .access_key_id)
+              OTP_SECRET=$(cat /opt/oe/patterns/instance.json | jq -r .otp_secret)
+              SECRET_ACCESS_KEY=$(cat /opt/oe/patterns/instance.json | jq -r .secret_access_key)
+              SECRET_KEY_BASE=$(cat /opt/oe/patterns/instance.json | jq -r .secret_key_base)
+              SMTP_PASSWORD=$(cat /opt/oe/patterns/instance.json | jq -r .smtp_password)
+              VAPID_PRIVATE_KEY=$(cat /opt/oe/patterns/instance.json | jq -r .vapid_private_key)
+              VAPID_PUBLIC_KEY=$(cat /opt/oe/patterns/instance.json | jq -r .vapid_public_key)
+
+              cat <<EOF > /etc/nginx/sites-available/mastodon
+              map \$http_upgrade \$connection_upgrade {
+                default upgrade;
+                ''      close;
+              }
+
+              upstream backend {
+                  server 127.0.0.1:3000 fail_timeout=0;
+              }
+
+              upstream streaming {
+                  server 127.0.0.1:4000 fail_timeout=0;
+              }
+
+              proxy_cache_path /var/cache/nginx levels=1:2 keys_zone=CACHE:10m inactive=7d max_size=1g;
+
+              server {
+                listen 443 ssl http2;
+                listen [::]:443 ssl http2;
+                server_name ${Hostname};
+
+                ssl_protocols TLSv1.2 TLSv1.3;
+                ssl_ciphers HIGH:!MEDIUM:!LOW:!aNULL:!NULL:!SHA;
+                ssl_prefer_server_ciphers on;
+                ssl_session_cache shared:SSL:10m;
+                ssl_session_tickets off;
+
+                ssl_certificate     /etc/ssl/certs/nginx-selfsigned.crt;
+                ssl_certificate_key /etc/ssl/private/nginx-selfsigned.key;
+
+                keepalive_timeout    70;
+                sendfile             on;
+                client_max_body_size 80m;
+
+                root /home/mastodon/live/public;
+
+                gzip on;
+                gzip_disable "msie6";
+                gzip_vary on;
+                gzip_proxied any;
+                gzip_comp_level 6;
+                gzip_buffers 16 8k;
+                gzip_http_version 1.1;
+                gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript image/svg+xml image/x-icon;
+
+                add_header Strict-Transport-Security "max-age=31536000" always;
+
+                location / {
+                  try_files \$uri @proxy;
+                }
+
+                location ~ ^/(emoji|packs|system/accounts/avatars|system/media_attachments/files) {
+                  add_header Cache-Control "public, max-age=31536000, immutable";
+                  add_header Strict-Transport-Security "max-age=31536000" always;
+                  try_files \$uri @proxy;
+                }
+
+                location /sw.js {
+                  add_header Cache-Control "public, max-age=0";
+                  add_header Strict-Transport-Security "max-age=31536000" always;
+                  try_files \$uri @proxy;
+                }
+
+                location @proxy {
+                  proxy_set_header Host \$host;
+                  proxy_set_header X-Real-IP \$remote_addr;
+                  proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto \$scheme;
+                  proxy_set_header Proxy "";
+                  proxy_pass_header Server;
+
+                  proxy_pass http://backend;
+                  proxy_buffering on;
+                  proxy_redirect off;
+                  proxy_http_version 1.1;
+                  proxy_set_header Upgrade \$http_upgrade;
+                  proxy_set_header Connection \$connection_upgrade;
+
+                  proxy_cache CACHE;
+                  proxy_cache_valid 200 7d;
+                  proxy_cache_valid 410 24h;
+                  proxy_cache_use_stale error timeout updating http_500 http_502 http_503 http_504;
+                  add_header X-Cached \$upstream_cache_status;
+                  add_header Strict-Transport-Security "max-age=31536000" always;
+
+                  tcp_nodelay on;
+                }
+
+                location /api/v1/streaming {
+                  proxy_set_header Host \$host;
+                  proxy_set_header X-Real-IP \$remote_addr;
+                  proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto \$scheme;
+                  proxy_set_header Proxy "";
+
+                  proxy_pass http://streaming;
+                  proxy_buffering off;
+                  proxy_redirect off;
+                  proxy_http_version 1.1;
+                  proxy_set_header Upgrade \$http_upgrade;
+                  proxy_set_header Connection \$connection_upgrade;
+
+                  tcp_nodelay on;
+                }
+
+                error_page 500 501 502 503 504 /500.html;
+              }
+              EOF
+
+              cat <<EOF > /home/mastodon/live/.env.production
+              LOCAL_DOMAIN=${Hostname}
+              SINGLE_USER_MODE=false
+              SECRET_KEY_BASE="$SECRET_KEY_BASE"
+              OTP_SECRET="$OTP_SECRET"
+              VAPID_PRIVATE_KEY="$VAPID_PRIVATE_KEY"
+              VAPID_PUBLIC_KEY="$VAPID_PUBLIC_KEY"
+              DB_HOST=${DbCluster.Endpoint.Address}
+              DB_PORT=${DbCluster.Endpoint.Port}
+              DB_NAME=mastodon_production
+              DB_USER=$DB_USERNAME
+              DB_PASS="$DB_PASSWORD"
+              ES_ENABLED=true
+              ES_HOST=${OpenSearchServiceDomain.DomainEndpoint}
+              ES_PORT=80
+              REDIS_HOST=${RedisCluster.RedisEndpoint.Address}
+              REDIS_PORT=${RedisCluster.RedisEndpoint.Port}
+              REDIS_PASSWORD=
+              S3_ENABLED=true
+              S3_BUCKET=${AssetsBucketName}
+              S3_PROTOCOL=https
+              AWS_ACCESS_KEY_ID=$ACCESS_KEY_ID
+              AWS_SECRET_ACCESS_KEY=$SECRET_ACCESS_KEY
+              S3_REGION=${AWS::Region}
+              S3_HOSTNAME=s3.${AWS::Region}.amazonaws.com
+              SMTP_SERVER=email-smtp.${AWS::Region}.amazonaws.com
+              SMTP_PORT=587
+              SMTP_LOGIN=$ACCESS_KEY_ID
+              SMTP_PASSWORD="$SMTP_PASSWORD"
+              SMTP_AUTH_METHOD=login
+              SMTP_OPENSSL_VERIFY_MODE=none
+              SMTP_FROM_ADDRESS='${Name} <no-reply@${HostedZoneName}>'
+              EOF
+
+              ln -s /etc/nginx/sites-available/mastodon /etc/nginx/sites-enabled/mastodon
+              service nginx restart
+
+              # this is safe to re-run as it will check if the db has already been setup...
+              su - mastodon -c "cd /home/mastodon/live && RAILS_ENV=production /home/mastodon/.rbenv/shims/bundle exec rake db:setup"
+
+              systemctl restart mastodon-web mastodon-sidekiq mastodon-streaming
+              success=$?
+              cfn-signal --exit-code $success --stack ${AWS::StackName} --resource Asg --region ${AWS::Region}
+
+              # reprovision string: ${AsgReprovisionString}
+            - AssetsBucketName:
+                Fn::If:
+                  - AssetsBucketNameNotExists
+                  - Ref: AssetsBucket
+                  - Ref: AssetsBucketName
+              DbSecretArn:
+                Fn::If:
+                  - DbSecretArnExistsCondition
+                  - Ref: DbSecretArn
+                  - Ref: DbSecret
+              Hostname:
+                Ref: DnsHostname
+              HostedZoneName:
+                Ref: DnsRoute53HostedZoneName
+              InstanceSecretName:
+                Fn::Join:
+                  - ""
+                  - - Ref: AWS::StackName
+                    - /instance/credentials
+  Asg:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      MaxSize:
+        Ref: AsgMaxSize
+      MinSize:
+        Ref: AsgMinSize
+      DesiredCapacity:
+        Ref: AsgDesiredCapacity
+      LaunchConfigurationName:
+        Ref: AsgLaunchConfig
+      Tags:
+        - Key: Name
+          PropagateAtLaunch: true
+          Value:
+            Fn::Join:
+              - ""
+              - - Ref: AWS::StackName
+                - /Asg
+      TargetGroupARNs:
+        - Ref: AlbTargetGroup
+      VPCZoneIdentifier:
+        Fn::If:
+          - VpcNotGiven
+          - - Ref: VpcPrivateSubnet1
+            - Ref: VpcPrivateSubnet2
+          - - Ref: VpcPrivateSubnet1Id
+            - Ref: VpcPrivateSubnet2Id
+    DependsOn:
+      - DbPrimaryInstance
+      - GenerateSMTPPasswordCustomResource
+    CreationPolicy:
+      ResourceSignal:
+        Count: 1
+        Timeout: PT15M
+    UpdatePolicy:
+      AutoScalingReplacingUpdate:
+        WillReplace: true
+  AlbSg:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription:
+        Fn::Join:
+          - ""
+          - - Ref: AWS::StackName
+            - /AlbSg
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          Description: all IPv4 egress traffic allowed
+          IpProtocol: "-1"
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Join:
+              - ""
+              - - Ref: AWS::StackName
+                - /AlbSg
+      VpcId:
+        Fn::If:
+          - VpcNotGiven
+          - Ref: Vpc
+          - Ref: VpcId
+  AlbSgHttpIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      IpProtocol: tcp
+      CidrIp:
+        Ref: AlbIngressCidr
+      Description: Allow HTTP traffic to ALB from anyone
+      FromPort: 80
+      GroupId:
+        Ref: AlbSg
+      ToPort: 80
+  AlbSgHttpsIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      IpProtocol: tcp
+      CidrIp:
+        Ref: AlbIngressCidr
+      Description: Allow HTTPS traffic to ALB from anyone
+      FromPort: 443
+      GroupId:
+        Ref: AlbSg
+      ToPort: 443
+  AlbSgAsgIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      IpProtocol: tcp
+      Description: Allow traffic from Alb to App
+      FromPort: 443
+      GroupId:
+        Ref: AsgSg
+      SourceSecurityGroupId:
+        Ref: AlbSg
+      ToPort: 443
+  Alb:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Scheme: internet-facing
+      SecurityGroups:
+        - Ref: AlbSg
+      Subnets:
+        Fn::If:
+          - VpcNotGiven
+          - - Ref: VpcPublicSubnet1
+            - Ref: VpcPublicSubnet2
+          - - Ref: VpcPublicSubnet1Id
+            - Ref: VpcPublicSubnet2Id
+      Type: application
+  AlbHttpListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: redirect
+          RedirectConfig:
+            Host: "#{host}"
+            Path: /#{path}
+            Port: "443"
+            Protocol: HTTPS
+            Query: "#{query}"
+            StatusCode: HTTP_301
+      LoadBalancerArn:
+        Ref: Alb
+      Port: 80
+      Protocol: HTTP
+  AlbTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckPath: /health
+      Port: 443
+      Protocol: HTTPS
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: "10"
+      TargetType: instance
+      VpcId:
+        Fn::If:
+          - VpcNotGiven
+          - Ref: Vpc
+          - Ref: VpcId
+  AlbHttpsListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - TargetGroupArn:
+            Ref: AlbTargetGroup
+          Type: forward
+      LoadBalancerArn:
+        Ref: Alb
+      Certificates:
+        - CertificateArn:
+            Ref: AlbCertificateArn
+      Port: 443
+      Protocol: HTTPS
+  DbSg:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Database SG
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          Description: all IPv4 egress traffic allowed
+          IpProtocol: "-1"
+      VpcId:
+        Fn::If:
+          - VpcNotGiven
+          - Ref: Vpc
+          - Ref: VpcId
+  DbSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Aurora Postgresql DB Subnet Group
+      SubnetIds:
+        Fn::If:
+          - VpcNotGiven
+          - - Ref: VpcPrivateSubnet1
+            - Ref: VpcPrivateSubnet2
+          - - Ref: VpcPrivateSubnet1Id
+            - Ref: VpcPrivateSubnet2Id
+  DbCluster:
+    Type: AWS::RDS::DBCluster
+    Properties:
+      Engine: aurora-postgresql
+      BackupRetentionPeriod:
+        Ref: DbBackupRetentionPeriod
+      DBClusterParameterGroupName: default.aurora-postgresql13
+      DBSubnetGroupName:
+        Ref: DbSubnetGroup
+      EngineMode: provisioned
+      EngineVersion: "13.7"
+      MasterUsername:
+        Fn::If:
+          - DbSnapshotIdentifierExistsCondition
+          - Ref: AWS::NoValue
+          - Fn::If:
+              - DbSecretArnExistsCondition
+              - Fn::Sub: "{{resolve:secretsmanager:${DbSecretArn}:SecretString:username}}"
+              - Fn::Sub: "{{resolve:secretsmanager:${DbSecret}:SecretString:username}}"
+      MasterUserPassword:
+        Fn::If:
+          - DbSnapshotIdentifierExistsCondition
+          - Ref: AWS::NoValue
+          - Fn::If:
+              - DbSecretArnExistsCondition
+              - Fn::Sub: "{{resolve:secretsmanager:${DbSecretArn}:SecretString:password}}"
+              - Fn::Sub: "{{resolve:secretsmanager:${DbSecret}:SecretString:password}}"
+      Port: 5432
+      SnapshotIdentifier:
+        Fn::If:
+          - DbSnapshotIdentifierExistsCondition
+          - Ref: DbSnapshotIdentifier
+          - Ref: AWS::NoValue
+      StorageEncrypted: true
+      Tags:
+        - Key: oe:patterns:db:secretarn
+          Value:
+            Fn::If:
+              - DbSecretArnExistsCondition
+              - Ref: DbSecretArn
+              - Ref: DbSecret
+      VpcSecurityGroupIds:
+        - Ref: DbSg
+  DbPrimaryInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBClusterIdentifier:
+        Ref: DbCluster
+      DBInstanceClass:
+        Ref: DbInstanceClass
+      DBInstanceIdentifier:
+        Fn::If:
+          - DbSnapshotIdentifierExistsCondition
+          - Ref: AWS::NoValue
+          - Fn::Join:
+              - "-"
+              - - db
+                - Fn::Select:
+                    - 2
+                    - Fn::Split:
+                        - /
+                        - Ref: AWS::StackId
+      DBParameterGroupName: default.aurora-postgresql13
+      DBSubnetGroupName:
+        Ref: DbSubnetGroup
+      Engine: aurora-postgresql
+      PubliclyAccessible: false
+  DbSgIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      IpProtocol: tcp
+      FromPort: 5432
+      GroupId:
+        Ref: DbSg
+      SourceSecurityGroupId:
+        Ref: AsgSg
+      ToPort: 5432
+Outputs:
+  VpcIdOutput:
+    Description: The ID of the VPC.
+    Value:
+      Fn::If:
+        - VpcNotGiven
+        - Ref: Vpc
+        - Ref: VpcId
+  VpcPrivateSubnet1IdOutput:
+    Description: The ID of the first private VPC subnet.
+    Value:
+      Fn::If:
+        - VpcNotGiven
+        - Ref: VpcPrivateSubnet1
+        - Ref: VpcPrivateSubnet1Id
+  VpcPrivateSubnet2IdOutput:
+    Description: The ID of the second private VPC subnet.
+    Value:
+      Fn::If:
+        - VpcNotGiven
+        - Ref: VpcPrivateSubnet2
+        - Ref: VpcPrivateSubnet2Id
+  VpcPublicSubnet1IdOutput:
+    Description: The ID of the first public VPC subnet.
+    Value:
+      Fn::If:
+        - VpcNotGiven
+        - Ref: VpcPublicSubnet1
+        - Ref: VpcPublicSubnet1Id
+  VpcPublicSubnet2IdOutput:
+    Description: The ID of the second public VPC subnet.
+    Value:
+      Fn::If:
+        - VpcNotGiven
+        - Ref: VpcPublicSubnet2
+        - Ref: VpcPublicSubnet2Id
+  DnsSiteUrlOutput:
+    Description: The URL Endpoint
+    Value:
+      Fn::If:
+        - DnsHostnameExists
+        - Fn::Join:
+            - ""
+            - - https://
+              - Ref: DnsHostname
+        - Fn::Join:
+            - ""
+            - - https://
+              - Fn::GetAtt:
+                  - Alb
+                  - DNSName
+Mappings:
+  AWSAMIRegionMap:
+    AMI:
+      OEAMI: ordinary-experts-patterns-mastodon-1.0.0-20221120-0533
+    ap-northeast-1:
+      AMI: ami-03854203f7c860c59
+    ap-northeast-2:
+      AMI: ami-0bfa8c6083cf86976
+    ap-northeast-3:
+      AMI: ami-0ce9aa0864b2076ba
+    ap-south-1:
+      AMI: ami-002523864a3dc0942
+    ap-southeast-1:
+      AMI: ami-0e3d356bbe9e22098
+    ap-southeast-2:
+      AMI: ami-05a447bc4273633f5
+    ap-southeast-3:
+      AMI: ami-0b7c7c4f83bef6f4b
+    ca-central-1:
+      AMI: ami-0353a5ba4faed92e0
+    eu-central-1:
+      AMI: ami-07829c6ab711cdd3f
+    eu-north-1:
+      AMI: ami-0910c1b345d53d2ad
+    eu-south-1:
+      AMI: ami-085923c3f14017b3a
+    eu-south-2:
+      AMI: ami-037c630ae3a81f221
+    af-south-1:
+      AMI: ami-0f9616b1c00ba5546
+    me-south-1:
+      AMI: ami-0cc113e4874c16a3a
+    me-central-1:
+      AMI: ami-052cfe1c8180bc2c4
+    eu-south-2:
+      AMI: ami-037c630ae3a81f221
+    eu-west-1:
+      AMI: ami-0645b68c9b675b3ac
+    eu-west-2:
+      AMI: ami-0980dbdb6df438f7f
+    eu-west-3:
+      AMI: ami-0f024ce1e913f3230
+    sa-east-1:
+      AMI: ami-0c8cf9f74f8dc5a0b
+    ap-east-1:
+      AMI: ami-0f96cf8127fd13acb
+    us-east-2:
+      AMI: ami-0116eb6060d64da26
+    us-west-1:
+      AMI: ami-002b8410273117e59
+    us-west-2:
+      AMI: ami-0455af53ea476fd05
+    us-east-1:
+      AMI: ami-03e6c7bd7a1df74f4
+Rules:
+  DbSnapshotIdentifierAndSecretRequiredRule:
+    RuleCondition:
+      Fn::Not:
+        - Fn::Equals:
+            - Ref: DbSnapshotIdentifier
+            - ""
+    Assertions:
+      - Assert:
+          Fn::Not:
+            - Fn::Equals:
+                - Ref: DbSecretArn
+                - ""
+        AssertDescription: When restoring the database from a snapshot, a secret ARN must also be supplied, prepopulated with username and password key-value pairs which correspond to the snapshot image
+
