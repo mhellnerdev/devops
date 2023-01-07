@@ -8,11 +8,12 @@ sudo dnf install htop -y
 sudo dnf install tar -y
 sudo dnf install git -y
 sudo systemctl disable firewalld --now
+sudo dnf install open-vm-tools
 sudo setenforce 0
 sudo sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config && cat /etc/selinux/config
 # sudo init 0 
 sudo hostnamectl set-hostname awx-stream
-vim /etc/hosts
+sudo vim /etc/hosts
 sudo init 6
 
 # install k3s
@@ -42,7 +43,7 @@ images:
 namespace: awx 
 EOF
 
-# Setd default namespace to awx. Use if you do not want to keep using -n or --namespace
+# Set default namespace to awx. Use if you do not want to keep using -n or --namespace
 kubectl config set-context --current --namespace=awx
 
 # See pods all starting, otherwise pass --namespace awx
@@ -52,7 +53,7 @@ kubectl get pods -A
 # Get logs of awx-operator pod
 kubectl logs -f awx-operator-controller-manager-577f6968b5-vqks8
 
-# Create AWX config
+# Create AWX pods yaml
 cat <<EOF | tee awx.yaml
 ---
 apiVersion: awx.ansible.com/v1beta1
