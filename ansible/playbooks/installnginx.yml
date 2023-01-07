@@ -1,13 +1,13 @@
 - hosts: webservers
-  gather_facts: yes
-  become: yes
+  gather_facts: true
+  become_user: root
 
   vars_files:
     - ./vars.yml
 
   tasks:
   - name: Install Nginx
-    apt: pkg=nginx state=present
+    dnf: pkg=nginx state=present
     notify:
     - restart nginx
   - name: Enable Nginx during boot
@@ -17,7 +17,7 @@
       service: name=nginx state=restarted
 
 - hosts: dbservers
-  become: yes
+  become_user: yes
   tasks:
   - name: Install mysql
-    apt: pkg=mysql-server state=present
+    dnf: pkg=mysql-server state=present
