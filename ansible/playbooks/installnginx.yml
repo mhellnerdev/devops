@@ -17,7 +17,7 @@
       service: name=nginx state=restarted
 
 - hosts: dbservers
-  become_user: yes
+  become_user: root
   tasks:
   - name: Install mysql
     dnf: pkg=mysql-server state=present
