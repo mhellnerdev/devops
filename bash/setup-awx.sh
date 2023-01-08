@@ -1,5 +1,22 @@
 #!/bin/bash
 
+# Setup SSH key login
+mkdir ~/.ssh
+chmod 700 ~/.ssh
+
+# cat pub key into authorized_keys
+cat <<EOF | tee ~/.ssh/authorized_keys
+<PUBLIC KEY_HERE>
+EOF
+
+# Set correct permissions for sshd
+chmod 600 ~/.ssh/authorized_keys
+
+# Turn off password authentication
+sudo sed -i 's/#   PasswordAuthentication yes/PasswordAuthentication no/g' /etc/ssh/ssh_config && cat /etc/ssh/ssh_config
+sudo systemctl restart sshd && sudo systemctl status sshd
+
+# Package Installs
 sudo dnf update -y
 sudo dnf install epel-release -y
 sudo dnf install epel-next-release -y
@@ -8,17 +25,20 @@ sudo dnf install htop -y
 sudo dnf install tar -y
 sudo dnf install git -y
 sudo systemctl disable firewalld --now
-sudo dnf install open-vm-tools
+sudo dnf install open-vm-tools -y
 sudo setenforce 0
 sudo sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config && cat /etc/selinux/config
 # sudo init 0 
-sudo hostnamectl set-hostname awx-stream
+sudo hostnamectl set-hostname awx
 sudo vim /etc/hosts
 sudo init 6
 
 # install k3s
 curl -sfL https://get.k3s.io | sudo bash -
-sudo su -
+# Take ownership of k3s config yaml to prevent need for sudo
+sudo chown $USER:$USER /etc/rancher/k3s/k3s.yaml
+kubectl version
+# sudo su -
 kubectl get nodes
 kubectl get pods -A
 
@@ -27,7 +47,7 @@ curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack
 sudo mv kustomize /usr/local/bin
 
 # setup kustomize
-cat <<EOF | tee kustomize.yaml
+cat <<EOF | tee kustomization.yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
@@ -42,6 +62,9 @@ images:
 # Specify a custom namespace in which to install AWX
 namespace: awx 
 EOF
+
+# Build AWX operator pod with above yaml
+kustomize build . | kubectl apply -f -
 
 # Set default namespace to awx. Use if you do not want to keep using -n or --namespace
 kubectl config set-context --current --namespace=awx
@@ -72,7 +95,7 @@ EOF
 kustomize build . | kubectl apply -f -
 
 # Watch logs of awx-operator pod
-sudo kubectl logs -f awx-operator-controller-manager-577f6968b5-vqks8 -c awx-manager --namespace awx
+sudo kubectl logs -f awx-operator-controller-manager-577f6968b5-6t6qf -c awx-manager --namespace awx
 
 # Check all pods are up and running
 kubectl get pods -n awx
@@ -81,7 +104,7 @@ kubectl get pods -A
 # Outputs secret password that is needed to login for the first time.
 kubectl get secret awx-admin-password -o jsonpath="{.data.password}" --namespace awx | base64 --decode
 
-# get network info about pods. Look for exposed NodePort for awx-service.
+# Get network info about pods. Look for exposed NodePort for awx-service.
 # Should be 30080 as defined in the awx.yaml file setup earlier.
 # Visit hosts IP address with this port to login to AWX for the first time.
 kubectl get svc -A
