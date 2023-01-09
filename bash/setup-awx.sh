@@ -13,7 +13,7 @@ EOF
 chmod 600 ~/.ssh/authorized_keys
 
 # Turn off password authentication
-sudo sed -i 's/#   PasswordAuthentication yes/PasswordAuthentication no/g' /etc/ssh/ssh_config && cat /etc/ssh/ssh_config
+sudo sed -i 's/PasswordAuthentication yes/PasswordAuthentication no/g' /etc/ssh/sshd_config && sudo cat /etc/ssh/sshd_config
 sudo systemctl restart sshd && sudo systemctl status sshd
 
 # Package Installs
