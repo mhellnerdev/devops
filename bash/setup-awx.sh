@@ -24,12 +24,13 @@ sudo dnf install vim -y
 sudo dnf install htop -y
 sudo dnf install tar -y
 sudo dnf install git -y
+sudo dnf install wget -y
+sudo dnf install net-tools -y
+sudo dnf install nc -y
 sudo dnf install open-vm-tools -y
 sudo systemctl disable firewalld --now
 sudo setenforce 0
 sudo sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config && cat /etc/selinux/config
-sudo hostnamectl set-hostname awx
-# sudo init 0 
 sudo vim /etc/hosts
 sudo init 6
 
