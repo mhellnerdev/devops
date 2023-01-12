@@ -6,7 +6,7 @@ chmod 700 ~/.ssh
 
 # cat pub key into authorized_keys
 cat <<EOF | tee ~/.ssh/authorized_keys
-<PUBLIC KEY_HERE>
+<KEY_HERE>
 EOF
 
 # Set correct permissions for sshd
@@ -24,12 +24,12 @@ sudo dnf install vim -y
 sudo dnf install htop -y
 sudo dnf install tar -y
 sudo dnf install git -y
-sudo systemctl disable firewalld --now
 sudo dnf install open-vm-tools -y
+sudo systemctl disable firewalld --now
 sudo setenforce 0
 sudo sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config && cat /etc/selinux/config
-# sudo init 0 
 sudo hostnamectl set-hostname awx
+# sudo init 0 
 sudo vim /etc/hosts
 sudo init 6
 
