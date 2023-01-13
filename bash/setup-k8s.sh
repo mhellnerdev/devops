@@ -1,7 +1,5 @@
 #!/bin/bash
 
-
-
 # Setup SSH key login
 mkdir /home/circlelabs/.ssh
 chown circlelabs:circlelabs /home/circlelabs/.ssh
@@ -72,6 +70,9 @@ sed -e '/swap/s/^/#/g' -i /etc/fstab
 dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
 dnf makecache
 
+# install containerd
+dnf install -y containerd.io
+
 # backup original containerd config and generate new file
 mv /etc/containerd/config.toml /etc/containerd/config.toml.orig
 containerd config default > /etc/containerd/config.toml
@@ -86,6 +87,11 @@ systemctl status containerd.service
 # add required firewall rules and reload
 firewall-cmd --permanent --add-port={6443,2379,2380,10250,10251,10252}/tcp
 firewall-cmd --reload
+
+# for worker nodes only
+firewall-cmd --permanent --add-port={10250,30000-32767}/tcp
+firewall-cmd --reload
+
 
 # add official k8s repo to yum repo
 cat > /etc/yum.repos.d/k8s.repo << EOF
@@ -117,7 +123,7 @@ mkdir /opt/bin
 curl -fsSLo /opt/bin/flanneld https://github.com/flannel-io/flannel/releases/download/v0.20.2/flannel-v0.20.2-linux-amd64.tar.gz
 chmod +x /opt/bin/flanneld
 
-# pull image stack that's required for the cluster
+# pull image stack that's required for the kube cluster
 kubeadm config images pull
 
 # initialize cluster
@@ -135,8 +141,50 @@ chown $(id -u):$(id -g) $HOME/.kube/config
 kubeadm init --pod-network-cidr=10.244.0.0/16 --control-plane-endpoint=control-plane-node.circlelabs.home
 
 
+# get join worker node command
+kubeadm token create --print-join-command
 
 
-# join worker node
-kubeadm join 10.10.100.60:6443 --token z6iamh.gm3gujcec946yluw \
-        --discovery-token-ca-cert-hash sha256:ca259415a846ccd78c918e4177187017353666298107b5b031a9e687b898c95c
+#### DASHBOARD ####
+
+# dashboard install
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml
+
+# accessing dashboard
+# https://github.com/kubernetes/dashboard/blob/master/docs/user/accessing-dashboard/README.md
+kubectl cluster-info
+
+# get dashboard info and port for node dashboard is running on
+kubectl get pods -A -o wide
+get svc -A -o wide
+
+
+# create yaml for dashboard admin user
+cat <<EOF | tee dashboard-admin-user.yaml
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: admin-user
+  namespace: kubernetes-dashboard
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: admin-user
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: admin-user
+  namespace: kubernetes-dashboard
+EOF
+
+# apply above file to create admin-user for dashboard login
+kubectl apply -f dashboard-adminuser.yaml
+
+# get token to login to dashboard
+kubectl -n kubernetes-dashboard create token admin-user
+
