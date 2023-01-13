@@ -95,6 +95,29 @@ EOF
 # This may take a while. Watch logs as it comes up with next command
 kustomize build . | kubectl apply -f -
 
+# SETUP SECRET KEY FOR AWX NAMESPACE. This is needed for postgres container to begin.
+cat <<EOF | tee awx-secret.yaml
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: custom-awx-secret-key
+  namespace: awx
+stringData:
+  secret_key: keyhere
+EOF
+
+# add the folowing to the awx.yaml spec section
+```
+
+---
+spec:
+  ...
+  secret_key_secret: custom-awx-secret-key
+
+
+```
+
 # Watch logs of awx-operator pod
 sudo kubectl logs -f awx-operator-controller-manager-577f6968b5-6t6qf -c awx-manager --namespace awx
 
