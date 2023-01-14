@@ -36,3 +36,13 @@ sudo setenforce 0
 sudo sed -i 's/SELINUX=enforcing/SELINUX=permissive/g' /etc/selinux/config && cat /etc/selinux/config
 sudo vim /etc/hosts
 sudo init 6
+
+###############
+## Terraform ##
+###############
+
+sudo dnf install -y dnf-plugins-core
+
+sudo dnf config-manager --add-repo https://rpm.releases.hashicorp.com/fedora/hashicorp.repo
+
+sudo dnf -y install terraform
