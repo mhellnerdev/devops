@@ -11,15 +11,15 @@ cat <<EOF | tee /home/circlelabs/.ssh/authorized_keys
 EOF
 
 # Set correct permissions for sshd
-chown circlelabs:circlelabs /home/circlelabs/authorized_keys
-chmod 600 /home/circlelabs/authorized_keys
+chown circlelabs:circlelabs /home/circlelabs/.ssh/authorized_keys
+chmod 600 /home/circlelabs/.ssh/authorized_keys
 
 # Turn off password authentication
 sudo sed -i 's/PasswordAuthentication yes/PasswordAuthentication no/g' /etc/ssh/sshd_config && sudo cat /etc/ssh/sshd_config
 sudo systemctl restart sshd && sudo systemctl status sshd
 
 # Package Installs
-dnf makecache --refresh
+sudo dnf makecache --refresh
 sudo dnf update -y
 sudo dnf install epel-release -y
 sudo dnf install epel-next-release -y
