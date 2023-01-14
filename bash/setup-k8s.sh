@@ -78,7 +78,7 @@ mv /etc/containerd/config.toml /etc/containerd/config.toml.orig
 containerd config default > /etc/containerd/config.toml
 
 # edit containerd config and enable systemd cgroup networking driver
-sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/g' /etc/containerd/config.toml && cat /etc/containerd/config.toml
+sed -i 's/SystemdCgroup = false/SystemdCgroup = true/g' /etc/containerd/config.toml && cat /etc/containerd/config.toml
 
 # enable and start caontainerd service
 systemctl enable --now containerd.service
@@ -123,11 +123,8 @@ mkdir /opt/bin
 curl -fsSLo /opt/bin/flanneld https://github.com/flannel-io/flannel/releases/download/v0.20.2/flannel-v0.20.2-linux-amd64.tar.gz
 chmod +x /opt/bin/flanneld
 
-# pull image stack that's required for the kube cluster
+# pull container stack that's required for the kube cluster
 kubeadm config images pull
-
-# initialize cluster
-kubeadm init
 
 # export admin.cong file variable for all sessions
 echo "export KUBECONFIG=/etc/kubernetes/admin.conf" >> /etc/profile.d/k8s.sh
@@ -140,12 +137,12 @@ chown $(id -u):$(id -g) $HOME/.kube/config
 # stand up kube master node
 kubeadm init --pod-network-cidr=10.244.0.0/16 --control-plane-endpoint=control-plane-node.circlelabs.home
 
-
 # get join worker node command
 kubeadm token create --print-join-command
 
-
+###################
 #### DASHBOARD ####
+###################
 
 # dashboard install
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml
@@ -157,7 +154,6 @@ kubectl cluster-info
 # get dashboard info and port for node dashboard is running on
 kubectl get pods -A -o wide
 get svc -A -o wide
-
 
 # create yaml for dashboard admin user
 cat <<EOF | tee dashboard-admin-user.yaml
