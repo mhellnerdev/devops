@@ -49,7 +49,7 @@ sudo dnf -y install terraform
 
 ###################################
 #
-# Using gitlab to store .tfstate file you must enable .filenames in gitlab.
+# Using gitlab to store .tfstate file you must enable  (dot).filenames in gitlab.
 # This is done through the ruby console on the gitlab host. 
 # sudo gitlab-rails console
 # Feature.enable(:allow_dots_on_tf_state_names)
