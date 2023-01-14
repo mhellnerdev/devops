@@ -46,3 +46,12 @@ sudo dnf install -y dnf-plugins-core
 sudo dnf config-manager --add-repo https://rpm.releases.hashicorp.com/fedora/hashicorp.repo
 
 sudo dnf -y install terraform
+
+###################################
+#
+# Using gitlab to store .tfstate file you must enable .filenames in gitlab.
+# This is done through the ruby console on the gitlab host. 
+# sudo gitlab-rails console
+# Feature.enable(:allow_dots_on_tf_state_names)
+#
+###################################
