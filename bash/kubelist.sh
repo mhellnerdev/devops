@@ -13,6 +13,11 @@ else
         echo ""
         echo "Services in namespace: $namespace"
         kubectl get services -n $namespace "${@:2}"
+        if [ "$2" == "pv" ]; then
+            echo ""
+            echo "Attached storage in namespace: $namespace"
+            kubectl get pv -n $namespace "${@:3}"
+        fi
     else
         echo "Invalid namespace. Please provide a valid namespace"
         exit 1
