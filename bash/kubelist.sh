@@ -2,6 +2,8 @@
 
 if [ "$1" == "namespaces" ]; then
     kubectl get namespaces "${@:2}"
+elif [ "$1" == "ingress" ]; then
+    kubectl get ingress "${@:2}"
 else
     namespace=$1
     if [ -z "$namespace" ]; then
