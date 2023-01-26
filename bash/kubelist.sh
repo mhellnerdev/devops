@@ -16,6 +16,7 @@ else
     echo ""
     tput sgr0
     kubectl get namespaces -A
+    echo ""
     if [ -z "$namespace" ]; then
         read -p "Please enter a namespace: " namespace
     fi
