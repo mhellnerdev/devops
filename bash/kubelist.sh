@@ -3,11 +3,21 @@
 if [ "$1" == "namespaces" ]; then
     kubectl get namespaces "${@:2}"
 elif [ "$1" == "ingress" ]; then
-    kubectl get ingress "${@:2}"
+    kubectl get ingress -A
 else
     namespace=$1
+    tput setaf 2
+    echo ""
+    echo "[!] 'kubelist namespaces' to list all namespaces"
+    echo "[!] 'kubelist <namespace>' will list the running pods and network services"
+    echo "[!] 'kubelist <namespace> -o wide' will provide more detailed output"
+    echo "[!] 'kubelist <namespace> pv' will provide information about physical volumes attached"
+    echo "[!] 'kubelist ingress' will provide information about the ingress controllers on all namespaces"
+    echo ""
+    tput sgr0
+    kubectl get namespaces -A
     if [ -z "$namespace" ]; then
-        read -p "Please provide a namespace: " namespace
+        read -p "Please enter a namespace: " namespace
     fi
     if kubectl get namespaces | grep -q $namespace; then
         echo "Pods in namespace: $namespace"
