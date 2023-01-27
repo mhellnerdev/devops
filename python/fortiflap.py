@@ -12,7 +12,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 url = "https://10.13.37.2/api/v2/monitor/vpn/ipsec"
 headers = {
     "Content-Type": "application/json",
-    "Authorization": "Bearer d4n85k8bqw8080b56rgHGNh7bgNrNn"
+    "Authorization": "Bearer xxxxxxxxxxxxxxxxx"
 }
 
 # Make the GET request to retrieve the IPsec status
