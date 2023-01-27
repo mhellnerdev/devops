@@ -5,7 +5,6 @@ import json
 # Suppress https insecure warnings
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-
 # Set up the URL and headers for the API call
 url = "https://10.13.37.2/api/v2/monitor/vpn/ipsec"
 headers = {
@@ -37,7 +36,7 @@ if tunnel_down:
     # Set the URL and payload for disabling the tunnel interface
     url = "https://10.13.37.2/api/v2/cmdb/system/interface/aws"
     data = {
-        "status": "disable"
+        "status": "down"
     }
 
     # Make the PUT request to disable the tunnel interface
@@ -51,7 +50,7 @@ if tunnel_down:
 
     # Set the payload for re-enabling the tunnel interface
     data = {
-        "status": "enable"
+        "status": "up"
     }
 
     # Make the PUT request to re-enable the tunnel interface
