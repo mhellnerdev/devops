@@ -5,7 +5,7 @@ import json
 url = "https://10.13.37.2/api/v2/monitor/vpn/ipsec"
 headers = {
     "Content-Type": "application/json",
-    "Authorization": "Bearer xxxxxxxxxxxxxxxxxxxxxxxx"
+    "Authorization": "Bearer <API_KEY>"
 }
 
 # Make the GET request to retrieve the IPsec status
@@ -28,6 +28,7 @@ for tunnel in data['results']:
 
 # If the tunnel is down, disable and re-enable the associated tunnel interface
 if tunnel_down:
+    print('AWS Tunnel is DOWN')
     # Set the URL and payload for disabling the tunnel interface
     url = "https://10.13.37.2/api/v2/cmdb/system/interface/aws"
     data = {
@@ -39,7 +40,7 @@ if tunnel_down:
 
     # Check if the request was successful
     if response.status_code == 200:
-        print("Tunnel interface disabled successfully")
+        print("AWS Tunnel interface disabled successfully")
     else:
         print("Failed to disable tunnel interface: " + response.text)
 
@@ -53,7 +54,7 @@ if tunnel_down:
 
     # Check if the request was successful
     if response.status_code == 200:
-        print("Tunnel interface re-enabled successfully")
+        print("AWS Tunnel interface re-enabled successfully")
     else:
         print("Failed to re-enable tunnel interface: " + response.text)
 else:
