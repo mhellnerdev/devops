@@ -1,5 +1,10 @@
 import requests
+import urllib3
 import json
+
+# Suppress https insecure warnings
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
 
 # Set up the URL and headers for the API call
 url = "https://10.13.37.2/api/v2/monitor/vpn/ipsec"
