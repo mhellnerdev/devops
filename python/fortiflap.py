@@ -81,3 +81,7 @@ if tunnel_down:
         time.sleep(1)
     else:
         print("Tunnel failed to initialize")
+        
+else:
+    print("Tunnel is not down, no action taken")
+    
