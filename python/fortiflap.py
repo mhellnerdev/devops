@@ -1,17 +1,15 @@
-#!/usr/bin/env python
-
 import requests
 import json
 
 # Set up the URL and headers for the API call
-url = "https://fortigate_ip/api/v2/monitor/vpn/ipsec"
+url = "https://10.13.37.2/api/v2/monitor/vpn/ipsec"
 headers = {
     "Content-Type": "application/json",
-    "Authorization": "Bearer YOUR_API_TOKEN"
+    "Authorization": "Bearer xxxxxxxxxxxxxxxxxxxxxxxx"
 }
 
 # Make the GET request to retrieve the IPsec status
-response = requests.get(url, headers=headers)
+response = requests.get(url, headers=headers, verify=False)
 
 # Check if the request was successful
 if response.status_code != 200:
@@ -24,20 +22,20 @@ data = json.loads(response.text)
 # Check if the tunnel is down
 tunnel_down = False
 for tunnel in data['results']:
-    if tunnel['name'] == "TUNNEL_NAME" and tunnel['status'] == "down":
+    if tunnel['name'] == "aws" and tunnel['proxyid'][0]['status'] == "down":
         tunnel_down = True
         break
 
 # If the tunnel is down, disable and re-enable the associated tunnel interface
 if tunnel_down:
     # Set the URL and payload for disabling the tunnel interface
-    url = "https://fortigate_ip/api/v2/cmdb/vpn/ipsec/phase1-interface/{tunnel_interface_name}"
+    url = "https://10.13.37.2/api/v2/cmdb/system/interface/aws"
     data = {
         "status": "disable"
     }
 
     # Make the PUT request to disable the tunnel interface
-    response = requests.put(url, headers=headers, json=data)
+    response = requests.put(url, headers=headers, json=data, verify=False)
 
     # Check if the request was successful
     if response.status_code == 200:
@@ -51,7 +49,7 @@ if tunnel_down:
     }
 
     # Make the PUT request to re-enable the tunnel interface
-    response = requests.put(url, headers=headers, json=data)
+    response = requests.put(url, headers=headers, json=data, verify=False)
 
     # Check if the request was successful
     if response.status_code == 200:
