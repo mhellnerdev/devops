@@ -9,7 +9,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 url = "https://10.13.37.2/api/v2/monitor/vpn/ipsec"
 headers = {
     "Content-Type": "application/json",
-    "Authorization": "Bearer xxxxxxxxxxxxxxx"
+    "Authorization": "xxxxxxxxxxxxxxxxxxxxxxxx"
 }
 
 # Make the GET request to retrieve the IPsec status
@@ -17,7 +17,7 @@ response = requests.get(url, headers=headers, verify=False)
 
 # Check if the request was successful
 if response.status_code != 200:
-    print("Failed to retrieve IPsec status: " + response.text)
+    print("Failed to retrieve IPsec status: \n" + response.text)
     exit()
 
 # Parse the response data
@@ -48,6 +48,7 @@ if tunnel_down:
         print("AWS Tunnel interface disabled successfully")
     else:
         print("Failed to disable tunnel interface: " + data['status'])
+        print(response.text)
 
     # Set the payload for re-enabling the tunnel interface
     data = {
@@ -62,6 +63,8 @@ if tunnel_down:
     if data['status'] == "up":
         print("AWS Tunnel interface re-enabled successfully")
     else:
-        print("Failed to re-enable tunnel interface: " + data['status'])
+        print("Failed to re-enable tunnel interface: Status is:" + data['status'])
+        print(response.text)
+
 else:
     print("Tunnel is not down, no action taken")
