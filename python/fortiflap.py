@@ -12,7 +12,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 url = "https://10.13.37.2/api/v2/monitor/vpn/ipsec"
 headers = {
     "Content-Type": "application/json",
-    "Authorization": "Bearer xxxxxxxxxxxxxxxxx"
+    "Authorization": "Bearer xxxxxxxxxxxxxxxxxxxx"
 }
 
 # Make the GET request to retrieve the IPsec status
@@ -35,7 +35,7 @@ for tunnel in data['results']:
 
 # If the tunnel is down, disable and re-enable the associated tunnel interface
 if tunnel_down:
-    print('AWS Tunnel is DOWN')
+    print('[!] AWS Tunnel is DOWN')
     # Set the URL and payload for disabling the tunnel interface
     url = "https://10.13.37.2/api/v2/cmdb/system/interface/aws"
     data = {
@@ -47,9 +47,9 @@ if tunnel_down:
 
     # Check if the request was successful
     if response.status_code == 200:
-        print("AWS Tunnel interface disabled successfully")
+        print("[*] AWS Tunnel interface disabled successfully")
     else:
-        print("Failed to disable tunnel interface: \n" + response.text)
+        print("[!] Failed to disable tunnel interface: \n" + response.text)
 
     # Set the payload for re-enabling the tunnel interface
     data = {
@@ -61,27 +61,27 @@ if tunnel_down:
 
     # Check if the request was successful
     if response.status_code == 200:
-        print("AWS Tunnel interface re-enabled successfully")
+        print("[*] AWS Tunnel interface re-enabled successfully")
     else:
-        print("Failed to re-enable tunnel interface: \n" + response.text)
+        print("[!] Failed to re-enable tunnel interface: \n" + response.text)
 
     # Wait for the tunnel to come back up
     timeout = time.time() + 20
     while time.time() < timeout:
         response = requests.get(url, headers=headers, verify=False)
         data = json.loads(response.text)
-        print("Waiting for tunnel", end="", flush=True)
+        print("[!] Waiting for tunnel", end="", flush=True)
         for i in range(wait_time):
             time.sleep(1)
             print(".", end="", flush=True)
         print("")
         if data['name'] == "aws" and data['results'][0]['proxyid'][0]['status'] == "up":
-            print("Tunnel is back up")
+            print("[+] Tunnel is back up")
             break
         time.sleep(1)
     else:
-        print("Tunnel failed to initialize")
+        print("[!] Tunnel failed to initialize")
         
 else:
-    print("Tunnel is not down, no action taken")
+    print("[*] Tunnel is not down, no action taken")
     
