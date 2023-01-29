@@ -79,6 +79,9 @@ dnf install telnet -y
 dnf install nc -y
 dnf install open-vm-tools -y
 
+# Disable firewall
+sudo systemctl disable firewalld --now
+
 # Set selinux to off/permissive
 echo "Setting SELINUX to permissive"
 setenforce 0
