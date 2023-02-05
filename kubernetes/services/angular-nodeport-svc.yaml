@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: angular-nodeport
+spec:
+  type: NopePort
+  ports:
+    - port: 5001
+      targetPort: 5001
+      nodePort: 31111
+      protocol: TCP
+  selector:
+    app: angular-list

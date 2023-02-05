@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: angular-list-deploy
+  labels:
+    app: angular-list
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: angular-list
+  template:
+    metadata:
+      labels:
+        app: angular-list
+    spec:
+      terminationGracePeriodSeconds: 1
+      containers:
+        - name: angular-list
+          image: mhellnerdev/angular-list:1.0
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5001
+      imagePullSecrets:
+        - name: docker-registry-secret
