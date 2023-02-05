@@ -34,6 +34,9 @@ sudo sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config && cat 
 sudo vim /etc/hosts
 sudo init 6
 
+# Install k3s as a multimaster setup, with etcd
+curl -sfL https://get.k3s.io | sh -s server --cluster-init
+
 # install k3s
 curl -sfL https://get.k3s.io | sudo bash -
 # Take ownership of k3s config yaml to prevent need for sudo
@@ -46,8 +49,15 @@ kubectl get pods -A
 # Get token for adding more nodes
 cat /var/lib/rancher/k3s/server/node-token
 
+# Command to run on multi master nodes to join to cluster
+curl -sfL https://get.k3s.io | K3S_TOKEN="K107e538f1143c307b8e48e2feaef15395790285923f173833b1098d3fa972e8dda::server:fdb7f85deb605aac6e9cd9326a62a8b5" K3S_URL="https://k3s-1.circlelabs.home:6443" K3S_NODE_NAME="k3s-2.circlelabs.home" sh -s - server --server "https://k3s-1.circlelabs.home:6443"
+
 # Command to run on worker nodes to join to cluster
-curl -sfL https://get.k3s.io | K3S_TOKEN="K10500459cbacd1506d342cfbcc9ac464797e157d4bc5d3d6d6cc47eae53fd38d03::server:1b85cd7d5eb03c414a232cbfe29bf101" K3S_URL="https://k3s-1.circlelabs.home:6443" K3S_NODE_NAME="k3s-2.circlelabs.home" bash -
+curl -sfL https://get.k3s.io | K3S_TOKEN="K107e538f1143c307b8e48e2feaef15395790285923f173833b1098d3fa972e8dda::server:fdb7f85deb605aac6e9cd9326a62a8b5" K3S_URL="https://k3s-1.circlelabs.home:6443" K3S_NODE_NAME="k3s-3.circlelabs.home" bash -
+
+
+
+
 
 
 # install kustomize
