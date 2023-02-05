@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: angular-nodeport
 spec:
-  type: NopePort
+  type: NodePort
   ports:
     - port: 5001
       targetPort: 5001
