@@ -50,10 +50,10 @@ kubectl get pods -A
 cat /var/lib/rancher/k3s/server/node-token
 
 # Command to run on multi master nodes to join to cluster
-curl -sfL https://get.k3s.io | K3S_TOKEN="K107e538f1143c307b8e48e2feaef15395790285923f173833b1098d3fa972e8dda::server:fdb7f85deb605aac6e9cd9326a62a8b5" K3S_URL="https://k3s-1.circlelabs.home:6443" K3S_NODE_NAME="k3s-2.circlelabs.home" sh -s - server --server "https://k3s-1.circlelabs.home:6443"
+curl -sfL https://get.k3s.io | K3S_TOKEN="K107e538f1143c307b8e48e2feaef15395790285923f173833b1098d3fa972e8dda::server:fdb7f85deb605aac6e9cd9326a62a8b5" K3S_URL="https://k3s-1.circlelabs.home:6443" K3S_NODE_NAME="k3s-x.circlelabs.home" sh -s - server --server "https://k3s-1.circlelabs.home:6443"
 
 # Command to run on worker nodes to join to cluster
-curl -sfL https://get.k3s.io | K3S_TOKEN="K107e538f1143c307b8e48e2feaef15395790285923f173833b1098d3fa972e8dda::server:fdb7f85deb605aac6e9cd9326a62a8b5" K3S_URL="https://k3s-1.circlelabs.home:6443" K3S_NODE_NAME="k3s-3.circlelabs.home" bash -
+curl -sfL https://get.k3s.io | K3S_TOKEN="K107e538f1143c307b8e48e2feaef15395790285923f173833b1098d3fa972e8dda::server:fdb7f85deb605aac6e9cd9326a62a8b5" K3S_URL="https://k3s-1.circlelabs.home:6443" K3S_NODE_NAME="k3s-x.circlelabs.home" bash -
 
 
 
