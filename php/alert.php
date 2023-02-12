@@ -11,6 +11,8 @@
 //
 // cli usage: php alert.php | php send_messsage.php
 
+$subject = "subject from alert.php";
 $alert = "Hello from alert script!";
 
-fwrite(STDOUT, $alert);
+fwrite(STDOUT, "$subject\n");
+fwrite(STDOUT, "$alert\n");
