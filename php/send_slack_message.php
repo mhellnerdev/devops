@@ -9,7 +9,7 @@ $alert = trim(fgets(STDIN));
 
 function send_slack_message($message)
 {
-    $slack_webhook_url = "https://hooks.slack.com/services/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";
+    $slack_webhook_url = "<webhook_url>";
     $emoji = ":rotating_light:";
 
     $data = array(
