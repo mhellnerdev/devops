@@ -20,7 +20,6 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
 
-services:
   grafana:
     image: grafana/grafana-oss:latest
     container_name: grafana
