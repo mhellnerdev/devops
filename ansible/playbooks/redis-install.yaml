@@ -1,0 +1,43 @@
+---
+- name: Install Redis
+  hosts: all
+  become: yes
+  vars:
+    redis_port: 6379
+    redis_state: present
+    redis_service_state: started
+    redis_service_enabled: yes
+  tasks:
+    - name: Install Redis
+      package:
+        name: redis
+        state: '{{ redis_state }}'
+
+    - name: Get Host IP Address
+      set_fact:
+        redis_bind_ip: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+
+    - name: Update Redis Configuration
+      lineinfile:
+        dest: /etc/redis.conf
+        regexp: '^port'
+        line: 'port {{ redis_port }}'
+        state: present
+        backrefs: yes
+      when: redis_state == 'present'
+
+    - name: Update Redis IP Binding
+      lineinfile:
+        dest: /etc/redis.conf
+        regexp: '^bind'
+        line: 'bind {{ redis_bind_ip }}'
+        state: present
+        backrefs: yes
+      when: redis_state == 'present'
+
+    - name: Start and Enable Redis Service
+      service:
+        name: redis
+        state: '{{ redis_service_state }}'
+        enabled: '{{ redis_service_enabled }}'
+      when: redis_state == 'present'

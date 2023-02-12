@@ -1,0 +1,33 @@
+---
+- name: Create user and add their private key
+  hosts: all
+  become: yes
+  vars:
+    username: circlelabs
+    key: key
+    sudo: no
+
+  tasks:
+    - name: Create user
+      user:
+        name: '{{ username }}'
+        state: present
+
+    - name: Add user to sudo group
+      become: yes
+      user:
+        name: '{{ username }}'
+        groups: wheel
+        append: '{{ sudo }}'
+
+    - name: Create .ssh directory for the user
+      file:
+        path: '/home/{{ username }}/.ssh'
+        state: directory
+        mode: 0700
+
+    - name: Add private key to authorized_keys file
+      authorized_key:
+        user: '{{ username }}'
+        state: present
+        key: '{{ key }}'

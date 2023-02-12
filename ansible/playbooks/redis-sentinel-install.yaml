@@ -1,0 +1,46 @@
+---
+- name: Configure Redis Sentinel
+  hosts: all
+  become: yes
+
+  vars:
+    sentinel_bind_ip: 0.0.0.0
+    sentinel_master_host: redis-1
+    redis_port: 6379
+    sentinel_port: 26379
+    sentinel_quorum: 2
+    sentinel_down_after_milliseconds: 5000
+    sentinel_parallel_syncs: 1
+    sentinel_failover_timeout: 180000
+    sentinel_state: present
+
+  tasks:
+    - name: Install Redis package
+      package:
+        name: redis
+        state: present
+
+    - name: Create or Remove Redis Sentinel configuration file
+      blockinfile:
+        path: /etc/redis-sentinel.conf
+        state: '{{ sentinel_state }}'
+        block: |
+          bind {{ sentinel_bind_ip }}
+          port {{ sentinel_port }}
+          sentinel monitor mymaster {{ sentinel_master_host }} {{ redis_port }} {{ sentinel_quorum }}
+          sentinel down-after-milliseconds mymaster {{ sentinel_down_after_milliseconds }}
+          sentinel parallel-syncs mymaster {{ sentinel_parallel_syncs }}
+          sentinel failover-timeout mymaster {{ sentinel_failover_timeout }}
+
+    - name: Start or Stop Redis Sentinel service
+      service:
+        name: redis-sentinel
+        state: started
+        enabled: yes
+      when: sentinel_state == 'present'
+
+    - name: Enable Redis Sentinel service at boot
+      systemd:
+        name: redis-sentinel
+        state: enabled
+      when: sentinel_state == 'present'

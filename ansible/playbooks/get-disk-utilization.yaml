@@ -1,0 +1,31 @@
+---
+- name: Get OS version and disk utilization
+  hosts: all
+  gather_facts: yes
+
+  tasks:
+    - name: Get OS version information
+      become: yes
+      shell: cat /etc/*release* | grep "^NAME=" | awk -F'=' '{print $2}' | tr -d '\n\r' | tr -d '\"'
+      register: os_distribution
+
+    - name: Get OS version information
+      become: yes
+      shell: cat /etc/*release* | grep "^VERSION=" | awk -F'=' '{print $2}' | tr -d '\n\r' | tr -d '\"'
+      register: os_version
+
+    - name: Get disk utilization information
+      become: yes
+      shell: df -h
+      register: disk_utilization
+
+    - name: Combine and print information
+      debug:
+        msg: |
+          OS Distribution: {{ os_distribution.stdout }}
+          Version: {{ os_version.stdout }}
+          Disk Utilization:
+          {% for line in disk_utilization.stdout.splitlines() %}
+          {{ line }}
+          {% endfor %}
+      when: os_distribution is defined and os_version is defined and disk_utilization is defined

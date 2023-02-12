@@ -1,0 +1,20 @@
+---
+- name: Get OS version and distribution
+  hosts: all
+  gather_facts: yes
+
+  tasks:
+    - name: Get OS version information
+      become: yes
+      shell: cat /etc/*release* | grep "^NAME=" | awk -F'=' '{print $2}' | tr -d '\n\r' | tr -d '\"'
+      register: os_distribution
+
+    - name: Get OS version information
+      become: yes
+      shell: cat /etc/*release* | grep "^VERSION=" | awk -F'=' '{print $2}' | tr -d '\n\r' | tr -d '\"'
+      register: os_version
+
+    - name: Combine and print OS information
+      debug:
+        msg: 'OS Distribution: {{ os_distribution.stdout }}, Version: {{ os_version.stdout }}'
+      when: os_distribution is defined and os_version is defined
