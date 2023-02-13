@@ -1,0 +1,41 @@
+---
+- name: Create Systemd Service
+  hosts: all
+  become: yes
+  vars:
+    service_name: example-service
+    service_description: Example Systemd Service
+    service_command: /usr/local/bin/<file>
+  tasks:
+    - name: Create Systemd Service Unit File
+      lineinfile:
+        path: /etc/systemd/system/{{ service_name }}.service
+        line: |
+          [Unit]
+          Description={{ service_description }}
+          [Service]
+          User=root
+          Group=root
+          Type=simple
+          ExecStart={{ service_command }}
+          Restart=on-failure
+          [Install]
+          WantedBy=multi-user.target
+        create: yes
+      tags:
+        - systemd
+
+    - name: Reload Systemd Manager Configuration
+      shell: systemctl daemon-reload
+      tags:
+        - reload
+
+    - name: Start Systemd Service
+      shell: systemctl start {{ service_name }}
+      tags:
+        - start
+
+    - name: Enable Systemd Service
+      shell: systemctl enable {{ service_name }}
+      tags:
+        - enable
