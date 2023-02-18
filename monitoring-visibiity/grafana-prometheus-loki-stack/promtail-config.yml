@@ -11,12 +11,12 @@ positions:
 clients:
   - url: http://loki:3100/loki/api/v1/push
 
-# local machine logs
+# local or system machine logs
 scrape_configs:
-  - job_name: local
+  - job_name: system
     static_configs:
-      - targets:
-          - localhost
+    - targets:
+      - localhost
         labels:
-          job: varlogs
+          job: label_for_loki
           __path__: /var/log/*log
