@@ -1,0 +1,24 @@
+---
+- name: Install and configure rsyslog
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Install rsyslog package
+      dnf:
+        name: rsyslog
+        state: present
+
+    - name: Configure rsyslog
+      lineinfile:
+        path: /etc/rsyslog.conf
+        line: |
+          *.* /var/log/syslog
+          kern.* /var/log/syslog
+      notify: restart rsyslog
+
+  handlers:
+    - name: restart rsyslog
+      service:
+        name: rsyslog
+        state: restarted
