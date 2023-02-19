@@ -1,6 +1,6 @@
-- hosts: webservers
+- hosts: all
   gather_facts: yes
   become: yes
   tasks:
-  - name: Unconditionally reboot the machine with all defaults
-    reboot:
+    - name: Unconditionally reboot the machine with all defaults
+      reboot:
