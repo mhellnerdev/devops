@@ -1,0 +1,103 @@
+- name: Create or Remove Promtail Service
+  hosts: all
+  become: yes
+  vars:
+    service_name: promtail
+    service_description: Prometheus Promtail Exporter
+    service_command: /usr/local/bin/promtail --config.file=/etc/promtail/promtail-config.yml
+    client_url: http://loki.circlelabs.home:3100/loki/api/v1/push
+    present: true
+
+  tasks:
+    - name: Set job_name variable
+      set_fact:
+        job_name: '{{ inventory_hostname }}'
+      tags:
+        - job_name
+
+    - name: Create or Remove Promtail Directory
+      file:
+        path: /etc/promtail/
+        state: "{{ 'directory' if present else 'absent' }}"
+      tags:
+        - promtail
+
+    - name: Copy Promtail Configuration File
+      copy:
+        dest: /etc/promtail/promtail-config.yml
+        content: |
+          server:
+            http_listen_port: 9080
+            grpc_listen_port: 0
+
+          positions:
+            filename: /tmp/positions.yaml
+
+          clients:
+            - url: {{ client_url }}
+
+          scrape_configs:
+            - job_name: system
+              static_configs:
+                - targets:
+                    - localhost
+                  labels:
+                    job: {{ job_name }}
+                    __path__: /var/log/**/*log
+        force: yes
+      when: present
+      tags:
+        - promtail
+
+    - name: Remove Promtail Configuration File
+      file:
+        path: /etc/promtail/promtail-config.yml
+        state: absent
+      when: not present
+      tags:
+        - promtail
+
+    - name: Create or Remove Systemd Service Unit File
+      lineinfile:
+        path: /etc/systemd/system/{{ service_name }}.service
+        state: "{{ 'present' if present else 'absent' }}"
+        line: |
+          [Unit]
+          Description={{ service_description }}
+          [Service]
+          User=root
+          Group=root
+          Type=simple
+          ExecStart={{ service_command }}
+          Restart=on-failure
+          [Install]
+          WantedBy=multi-user.target
+        create: "{{ 'yes' if present else 'no' }}"
+      when: present or inventory_hostname in omit
+      tags:
+        - systemd
+
+    - name: Remove Systemd Service Unit File
+      file:
+        path: /etc/systemd/system/{{ service_name }}.service
+        state: absent
+      when: not present
+      tags:
+        - systemd
+
+    - name: Reload Systemd Manager Configuration
+      shell: systemctl daemon-reload
+      tags:
+        - reload
+
+    - name: Start or Stop Systemd Service
+      shell: systemctl {{ 'start' if present else 'stop' }} {{ service_name }}
+      tags:
+        - start
+        - stop
+
+    - name: Enable or Disable Systemd Service
+      shell: systemctl {{ 'enable' if present else 'disable' }} {{ service_name }}
+      tags:
+        - enable
+        - disable
