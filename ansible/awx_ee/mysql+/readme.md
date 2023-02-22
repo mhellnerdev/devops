@@ -17,3 +17,7 @@ ansible-galaxy install -r requirements.yml
 ### Build the docker container
 
 ansible-builder build --tag mhellnerdev/mysql_supported_ee:latest
+
+# Push to registry
+
+docker push mhellnerdev/mysql_supported_ee:latest
