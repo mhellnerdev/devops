@@ -14,9 +14,9 @@ pip install ansible-builder
 
 ansible-galaxy install -r requirements.yml
 
-### Build the docker container
+### Build the docker container with verbosity
 
-ansible-builder build --tag mhellnerdev/mysql_supported_ee:latest
+ansible-builder build --tag mhellnerdev/mysql_supported_ee:latest -v3
 
 # Push to registry
 
