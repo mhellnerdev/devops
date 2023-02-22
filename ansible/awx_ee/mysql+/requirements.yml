@@ -1,0 +1,13 @@
+---
+collections:
+  - name: ansible.posix
+  - name: community.general
+  - name: community.mysql
+  - name: community.crypto
+  - name: community.aws
+  - name: community.kubernetes
+  - name: awx.awx
+
+roles:
+  - name: geerlingguy.docker
+  - name: geerlingguy.pip
