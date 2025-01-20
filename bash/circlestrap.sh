@@ -67,7 +67,7 @@ sudo chmod 600 /root/.ssh/authorized_keys
 
 # Add root public key
 cat <<EOF | sudo tee /root/.ssh/authorized_keys
-ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCiEsXxd4nzkfzuJiyH5JU7HKpZF+F6TcDcaicM7iMKDqKSCJRSzjAwKtldhXwuCIp/By6s9ReZOC+NdCWJOxfeV8sZTztbbNAvYt1XtcW++EPqzP6LqicKNX58yvlHYj6WNXoOYyMbrQBMLl5DAbbZb0vpN1t2hQVEI9Xp/SD1KBXddC1NicXMwrSgCrJa+ad2gvpqN9dqDHLbYcmXkkpkxpHVwVdVLoaiSpKLqJVE3b+aKX3BbA8HaIxyk+WfYBRdorcD7hRrFtuCcXhRPuSsnp0bnjRxE64IuIDkgGQs3N71s7tjzWyg/ktxkCcSp6bsXuJBz5GpLlD7ATPHqkwM0Nketru0r/xZDi5OlnwylsXcoUUlZQblgRY90tQXGo/mth0WR4jIHhNekjNxNtuMhRyvacquKrVe9rZdZcur4cj/woe0w1lCQyBamr/yr3nBbJqL5Yyr23zM4gxNaQ7/50iLX0kJQKVyCI6Ce8o0DPv4g+wUhZifqWBr2JtKKr8= nutanix-env-root-key
+ssh-rsa xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 EOF
 
 # Ensure circlelabs user exists and set up SSH for it
