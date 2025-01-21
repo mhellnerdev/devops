@@ -10,26 +10,71 @@ echo "Enter hostname:"
 read hostname
 hostnamectl set-hostname $hostname
 
-# Set up networking
-echo "Enter IP address (e.g., 192.168.1.10/24):"
-read ip_address
-echo "Enter gateway:"
-read gateway
-echo "Enter network interface (e.g., eth0):"
-ip link show | awk -F: '{print $2}'
-read interface
-echo "Enter DNS Servers separated by a space:"
-read -a dns_servers
+# Function to configure DHCP
+configure_dhcp() {
+    if [[ -f /etc/netplan/01-netcfg-dhcp.yaml.backup ]]; then
+        echo "Applying DHCP configuration from backup."
+        sudo cp /etc/netplan/01-netcfg-dhcp.yaml.backup /etc/netplan/01-netcfg.yaml
+        sudo netplan apply
+        if [[ $? -ne 0 ]]; then
+            echo "Failed to apply DHCP configuration. Exiting script."
+            exit 1
+        fi
+        echo "DHCP configuration applied successfully."
+    else
+        echo "DHCP configuration backup not found. Cannot proceed with DHCP. Exiting script."
+        exit 1
+    fi
+}
 
-if [[ "$ID" == "ubuntu" ]]; then
-    echo "Setting up networking for Ubuntu"
-    # Ensure the file exists and has proper permissions
-    netplan_config="/etc/netplan/01-netcfg.yaml"
-    sudo touch $netplan_config
-    sudo chmod 600 $netplan_config
+# Function to configure static IP
+configure_static_ip() {
+    echo "Enter IP address (e.g., 192.168.1.10/24):"
+    read ip_address
+    echo "Enter gateway:"
+    read gateway
+    default_interface=$(ip link show | awk -F: '/^[0-9]+: ens3/ {print $2}' | xargs)
 
-    # Ubuntu network configuration using netplan
-    cat <<EOF | sudo tee $netplan_config
+    if [[ -n "$default_interface" ]]; then
+        echo "Detected default interface: $default_interface"
+        echo "Is this the correct interface? (yes/no)"
+        read confirmation
+        if [[ "$confirmation" != "yes" ]]; then
+            echo "Available interfaces:"
+            ip link show | awk -F: '/^[0-9]+: / {print $2}' | grep -v '^lo$'
+            echo "Enter the correct interface name:"
+            read interface
+        else
+            interface=$default_interface
+        fi
+    else
+        echo "No default interface detected. Available interfaces:"
+        ip link show | awk -F: '/^[0-9]+: / {print $2}' | grep -v '^lo$'
+        echo "Enter the correct interface name:"
+        read interface
+    fi
+    echo "Enter DNS Servers separated by a space:"
+    read -a dns_servers
+
+    if [[ "$ID" == "ubuntu" ]]; then
+        echo "Setting up networking for Ubuntu"
+
+        # Ensure a clean configuration by removing or ignoring existing files
+        netplan_config="/etc/netplan/01-netcfg.yaml"
+
+        for file in /etc/netplan/*.yaml; do
+            if [[ "$file" != *".backup" ]]; then
+                echo "Backing up existing Netplan configuration: $file"
+                sudo mv "$file" "$file.backup"
+            fi
+        done
+
+        # Ensure the new file exists and has proper permissions
+        sudo touch $netplan_config
+        sudo chmod 600 $netplan_config
+
+        # Ubuntu network configuration using netplan
+        cat <<EOF | sudo tee $netplan_config
 network:
   version: 2
   renderer: networkd
@@ -41,18 +86,45 @@ network:
         - to: default
           via: $gateway
       nameservers:
-        addresses: [${dns_servers[@]}]
+        addresses:
+$(printf "          - %s\n" "${dns_servers[@]}")
 EOF
-    sudo netplan apply
-elif [[ "$ID" =~ (rhel|centos|fedora) ]]; then
-    echo "Setting up networking for RHEL-based distro"
-    nmcli connection add type ethernet con-name ${interface}-connection ifname $interface
-    nmcli connection modify ${interface}-connection ipv4.method manual ipv4.addresses $ip_address ipv4.gateway $gateway ipv4.dns "${dns_servers[*]}"
-    nmcli connection up ${interface}-connection
+        echo "Do you want to apply the network configuration and continue? (yes/no)"
+        read confirmation
+        if [[ "$confirmation" != "yes" ]]; then
+            echo "Aborting script as per user request."
+            exit 1
+        fi
+
+        sudo netplan apply
+        if [[ $? -ne 0 ]]; then
+            echo "Netplan apply failed. Exiting script."
+            exit 1
+        fi
+
+        # Unmask wait-online service if it was previously masked
+        sudo systemctl unmask systemd-networkd-wait-online.service
+    elif [[ "$ID" =~ (rhel|centos|fedora|rocky) ]]; then
+        echo "Setting up networking for RHEL-based distro"
+        nmcli connection add type ethernet con-name ${interface}-connection ifname $interface
+        nmcli connection modify ${interface}-connection ipv4.method manual ipv4.addresses $ip_address ipv4.gateway $gateway ipv4.dns "${dns_servers[*]}"
+        nmcli connection up ${interface}-connection
+    else
+        echo "Unsupported distribution: $ID"
+        exit 1
+    fi
+}
+
+# Prompt user to enable DHCP or configure static IP
+echo "Do you want to enable DHCP for the IP address? (yes/no)"
+read enable_dhcp
+
+if [[ "$enable_dhcp" == "yes" ]]; then
+    configure_dhcp
 else
-    echo "Unsupported distribution: $ID"
-    exit 1
+    configure_static_ip
 fi
+
 
 # Setup hosts file
 cat <<EOF | sudo tee /etc/hosts
@@ -67,7 +139,7 @@ sudo chmod 600 /root/.ssh/authorized_keys
 
 # Add root public key
 cat <<EOF | sudo tee /root/.ssh/authorized_keys
-ssh-rsa xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ssh-rsa xxxxxxxxxxxxxxxxxxxx
 EOF
 
 # Ensure circlelabs user exists and set up SSH for it
@@ -82,7 +154,7 @@ sudo chmod 600 /home/circlelabs/.ssh/authorized_keys
 
 # Add the same key for circlelabs user
 cat <<EOF | sudo tee /home/circlelabs/.ssh/authorized_keys
-ssh-rsa xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ssh-rsa xxxxxxxxxxxxxxxxxxxx
 EOF
 
 sudo chown -R circlelabs:circlelabs /home/circlelabs/.ssh
@@ -91,9 +163,12 @@ sudo chown -R circlelabs:circlelabs /home/circlelabs/.ssh
 echo "circlelabs ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/circlelabs
 sudo chmod 440 /etc/sudoers.d/circlelabs
 
-sudo sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/g' /etc/ssh/sshd_config
-sudo sed -i 's/PasswordAuthentication yes/PasswordAuthentication no/g' /etc/ssh/sshd_config
-sudo systemctl restart ssh || sudo systemctl restart sshd
+# Restart SSH
+if [[ "$ID" == "ubuntu" ]]; then
+    sudo systemctl restart ssh
+else
+    sudo systemctl restart sshd
+fi
 
 # Update package manager
 if [[ "$ID" == "ubuntu" ]]; then
@@ -101,7 +176,7 @@ if [[ "$ID" == "ubuntu" ]]; then
     sudo apt upgrade -y
     sudo apt install -y vim htop tar git wget net-tools telnet
     sudo ufw disable
-elif [[ "$ID" =~ (rhel|centos|fedora) ]]; then
+elif [[ "$ID" =~ (rhel|centos|fedora|rocky) ]]; then
     sudo dnf makecache --refresh
     sudo dnf update -y
     sudo dnf install -y vim htop tar git wget net-tools telnet
@@ -113,7 +188,7 @@ echo "Enter any necessary package installs separated by a space:"
 read -a packages
 if [[ "$ID" == "ubuntu" ]]; then
     sudo apt install -y "${packages[@]}"
-elif [[ "$ID" =~ (rhel|centos|fedora) ]]; then
+elif [[ "$ID" =~ (rhel|centos|fedora|rocky) ]]; then
     sudo dnf install -y "${packages[@]}"
 fi
 
